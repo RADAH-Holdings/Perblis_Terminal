@@ -20,3 +20,9 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+import sentry_sdk
+sentry_sdk.init(
+    dsn=env('SENTRY_DSN', default=''),
+    traces_sample_rate=0.0,
+)
