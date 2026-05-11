@@ -2,6 +2,7 @@ import factory
 from factory.django import DjangoModelFactory
 from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import Point
+from django.core.files.uploadedfile import SimpleUploadedFile
 from faker import Faker
 import random
 
@@ -101,7 +102,9 @@ class ListingMediaFactory(DjangoModelFactory):
         model = 'listings.ListingMedia'
 
     listing = factory.SubFactory(ListingFactory)
-    file = factory.django.ImageField(filename='test_photo.jpg')
+    file = factory.LazyAttribute(
+        lambda _: SimpleUploadedFile('photo.jpg', b'imgcontent', content_type='image/jpeg')
+    )
     is_primary = False
     display_order = 0
 
@@ -166,3 +169,15 @@ class OwnerProfileFactory(DjangoModelFactory):
     bank_name = 'First Bank'
     bank_account_number = '3012345678'
     bank_account_name = factory.LazyAttribute(lambda _: fake.name().upper())
+
+
+def make_publishable_listing(owner, **kwargs):
+    """Creates a listing that satisfies all publish requirements: has a location and at least one photo."""
+    listing = ListingFactory(
+        owner=owner,
+        status='draft',
+        location=Point(3.3792, 6.5244, srid=4326),
+        **kwargs,
+    )
+    ListingMediaFactory(listing=listing, is_primary=True)
+    return listing
