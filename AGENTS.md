@@ -13,11 +13,20 @@ The environment requires PostgreSQL 16 with PostGIS 3 and geospatial libraries (
 sudo apt-get install -y postgresql postgresql-contrib postgis postgresql-16-postgis-3 gdal-bin libgdal-dev libgeos-dev libproj-dev
 ```
 
+### Environment Variable Override (Critical)
+
+The Cloud Agent VM has injected secrets (`DJANGO_SETTINGS_MODULE`, `DATABASE_URL`, etc.) that point at a remote Supabase database. **All Django commands must be prefixed** with overrides to use the local dev database:
+```
+DJANGO_SETTINGS_MODULE=config.settings.development DATABASE_URL= python manage.py <command>
+```
+Forgetting this will silently run against the non-local database.
+
 ### Starting Services
 
 1. **PostgreSQL**: `sudo service postgresql start` (must be running before Django)
-2. **Django dev server**: `cd /workspace && source venv/bin/activate && python manage.py runserver 0.0.0.0:8000`
-3. **Django Q2 worker** (optional, for background tasks): `cd /workspace && source venv/bin/activate && python manage.py qcluster`
+2. **Django dev server**: `cd /workspace && source venv/bin/activate && DJANGO_SETTINGS_MODULE=config.settings.development DATABASE_URL= python manage.py runserver 0.0.0.0:8000`
+3. **Owner Web Portal** (optional): `cd /workspace/owner-web && npm run dev` (Next.js 16, port 3000)
+4. **Django Q2 worker** (optional, for background tasks): `cd /workspace && source venv/bin/activate && DJANGO_SETTINGS_MODULE=config.settings.development DATABASE_URL= python manage.py qcluster`
 
 ### Database
 
@@ -33,7 +42,7 @@ sudo apt-get install -y postgresql postgresql-contrib postgis postgresql-16-post
 | Run dev server | `python manage.py runserver 0.0.0.0:8000` |
 | Run migrations | `python manage.py migrate` |
 | Create migrations | `python manage.py makemigrations` |
-| Run tests | `python manage.py test` |
+| Run tests | `pytest` (uses `pytest.ini`; do NOT use `python manage.py test`) |
 | Lint | `ruff check .` |
 | Django check | `python manage.py check` |
 | Collect static | `python manage.py collectstatic --noinput` |
@@ -58,7 +67,9 @@ The repo contains `MOBILE_WAVE_0{0..4}_*.md` files — step-by-step agent task f
 ### Gotchas
 
 - PostgreSQL must be started before running any Django management commands (migrations, server, etc.)
-- The User model uses email as `USERNAME_FIELD`, not username. Use `--email` flag with `createsuperuser`. With `--noinput`, you must also pass `--phone` and `--first_name`.
+- The User model uses email as `USERNAME_FIELD`, not username. Use `--email` flag with `createsuperuser`. With `--noinput`, you must also pass `--phone`, `--first_name`, and `--last_name`.
 - The project uses `django.contrib.gis` (GeoDjango), which requires PostGIS and system GIS libraries.
 - Virtual environment is at `/workspace/venv/` — always activate before running commands.
-- Test accounts (password `test1234!`): `owner1@test.com`, `owner2@test.com`, `renter1@test.com`, `renter2@test.com`, `dual@test.com`. Run `python manage.py shell < scripts/seed.py` to create them.
+- Test accounts (password `test1234!`): `owner1@test.com`, `owner2@test.com`, `renter1@test.com`, `renter2@test.com`, `dual@test.com`. Run `DJANGO_SETTINGS_MODULE=config.settings.development DATABASE_URL= python manage.py shell < scripts/seed.py` to create them.
+- `next lint` is removed in Next.js 16. The frontend ESLint config (`.eslintrc.json`) needs migration to flat config format (ESLint 9+). TypeScript typecheck works: `cd owner-web && npx tsc --noEmit`.
+- All Django management commands (migrate, test, runserver, etc.) need the env overrides or they hit a remote non-local DB.
