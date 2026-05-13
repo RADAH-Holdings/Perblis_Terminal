@@ -1,6 +1,5 @@
 import pytest
 from datetime import date, timedelta
-from bookings.models import Booking, BookingStatus
 
 
 @pytest.mark.django_db
@@ -208,6 +207,46 @@ class TestBookingStateTransitions:
         )
         response = owner_client.patch(f'/api/v1/bookings/{booking.id}/accept/')
         assert response.status_code == 400
+
+    def test_cannot_accept_overlapping_pending_after_first_confirmed(
+        self, owner_client, owner_user, renter_user, create_user
+    ):
+        """Two overlapping pending requests: confirming one must block the other."""
+        from rest_framework.test import APIClient
+        from tests.factories import ListingFactory, BookingFactory
+
+        listing = ListingFactory(owner=owner_user, is_available=True)
+        start = date.today() + timedelta(days=20)
+        end = date.today() + timedelta(days=30)
+        booking_first = BookingFactory(
+            renter=renter_user,
+            owner=owner_user,
+            listing=listing,
+            start_date=start,
+            end_date=end,
+            status='pending',
+        )
+        renter_b = create_user(email='renter_b_overlap@test.com', phone='08011119997')
+        client_b = APIClient()
+        client_b.force_authenticate(user=renter_b)
+        overlap_resp = client_b.post(
+            '/api/v1/bookings/',
+            {
+                'listing_id': str(listing.id),
+                'start_date': str(start + timedelta(days=2)),
+                'end_date': str(end - timedelta(days=2)),
+                'duration_type': 'daily',
+            },
+            format='json',
+        )
+        assert overlap_resp.status_code == 201
+        booking_second_id = overlap_resp.data['data']['id']
+
+        assert owner_client.patch(f'/api/v1/bookings/{booking_first.id}/accept/').status_code == 200
+
+        second_accept = owner_client.patch(f'/api/v1/bookings/{booking_second_id}/accept/')
+        assert second_accept.status_code == 400
+        assert 'overlap' in second_accept.data['errors'].lower()
 
     def test_owner_can_decline_pending_booking(self, owner_client, owner_user, renter_user):
         from tests.factories import ListingFactory, BookingFactory
