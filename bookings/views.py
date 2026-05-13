@@ -1,5 +1,9 @@
+from django.db import transaction
 from django.db.models import Q
+from django.http import Http404
 from django.shortcuts import get_object_or_404
+
+from listings.models import Listing
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -33,7 +37,6 @@ def booking_list_create(request):
                 owner=request.user
             ).select_related('renter', 'owner', 'listing')
         elif role == 'both':
-            from django.db.models import Q
             queryset = Booking.objects.filter(
                 Q(renter=request.user) | Q(owner=request.user)
             ).select_related('renter', 'owner', 'listing')
@@ -124,16 +127,45 @@ def booking_detail(request, booking_id):
 @permission_classes([IsAuthenticated])
 def booking_accept(request, booking_id):
     """Accept a pending booking. Owner only."""
-    booking = get_object_or_404(Booking, id=booking_id, owner=request.user)
+    with transaction.atomic():
+        try:
+            listing_id = (
+                Booking.objects.filter(id=booking_id, owner=request.user)
+                .values_list('listing_id', flat=True)
+                .get()
+            )
+        except Booking.DoesNotExist:
+            raise Http404()
 
-    if booking.status != BookingStatus.PENDING:
-        return Response(
-            {'success': False, 'errors': f"Cannot accept a booking with status '{booking.status}'."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
+        Listing.objects.select_for_update().get(pk=listing_id)
+        booking = Booking.objects.select_for_update().get(id=booking_id, owner=request.user)
 
-    booking.status = BookingStatus.CONFIRMED
-    booking.save(update_fields=['status', 'updated_at'])
+        if booking.status != BookingStatus.PENDING:
+            return Response(
+                {'success': False, 'errors': f"Cannot accept a booking with status '{booking.status}'."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        overlap = Booking.objects.filter(
+            listing_id=booking.listing_id,
+            status__in=[BookingStatus.CONFIRMED, BookingStatus.ACTIVE],
+            start_date__lt=booking.end_date,
+            end_date__gt=booking.start_date,
+        ).exclude(pk=booking.pk).exists()
+        if overlap:
+            return Response(
+                {
+                    'success': False,
+                    'errors': (
+                        'Another confirmed or active booking already overlaps these dates '
+                        'for this listing.'
+                    ),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        booking.status = BookingStatus.CONFIRMED
+        booking.save(update_fields=['status', 'updated_at'])
 
     return Response({
         'success': True,
