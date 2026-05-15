@@ -74,10 +74,14 @@ AWS_S3_REGION_NAME = 'auto'
 AWS_S3_FILE_OVERWRITE = False
 AWS_ACCESS_KEY_ID = env('R2_ACCESS_KEY_ID')
 AWS_SECRET_ACCESS_KEY = env('R2_SECRET_ACCESS_KEY')
-AWS_STORAGE_BUCKET_NAME = env('R2_BUCKET')
-AWS_S3_ENDPOINT_URL = env('R2_ENDPOINT')
-AWS_S3_CUSTOM_DOMAIN = _strip_scheme(env('R2_PUBLIC_URL'))
+AWS_STORAGE_BUCKET_NAME = env('R2_BUCKET').strip()
+AWS_S3_ENDPOINT_URL = env('R2_ENDPOINT').strip()
+AWS_S3_CUSTOM_DOMAIN = _strip_scheme(env('R2_PUBLIC_URL').strip())
 AWS_QUERYSTRING_AUTH = env.bool('AWS_QUERYSTRING_AUTH', default=False)
+# base.py sets public-read; R2 buckets typically disallow object ACLs (PutObject
+# fails with AccessDenied / 400 unless the token includes s3:PutObjectAcl).
+# Public reads come from the bucket / r2.dev public access policy, not per-object ACL.
+AWS_DEFAULT_ACL = None
 
 # ── CORS (mobile app + web frontend) ──────────────────────────────────
 # Browsers cannot use Access-Control-Allow-Origin: * together with credentialed
