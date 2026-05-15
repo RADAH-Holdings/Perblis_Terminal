@@ -34,10 +34,41 @@ MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # ── File uploads (Cloudflare R2 — S3-compatible) ───────────────────────
+# django-storages reads AWS_* names even when the bucket lives on R2.
+# Required env vars (all must be present in production):
+#   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY  R2 API token credentials
+#   AWS_STORAGE_BUCKET_NAME                   R2 bucket name
+#   AWS_S3_ENDPOINT_URL                       https://<account>.r2.cloudflarestorage.com
+#   AWS_S3_CUSTOM_DOMAIN                      public host serving the bucket
+#                                             (r2.dev subdomain or custom CDN domain).
+# Without AWS_S3_CUSTOM_DOMAIN, file.url returns a bare 'listings/...' path
+# that browsers resolve site-relative -> 404 on the Django host.
+_required_r2_env = (
+    'AWS_ACCESS_KEY_ID',
+    'AWS_SECRET_ACCESS_KEY',
+    'AWS_STORAGE_BUCKET_NAME',
+    'AWS_S3_ENDPOINT_URL',
+    'AWS_S3_CUSTOM_DOMAIN',
+)
+_missing_r2_env = [name for name in _required_r2_env if not env(name, default='')]
+if _missing_r2_env:
+    raise RuntimeError(
+        'Cloudflare R2 storage is misconfigured. Missing env vars: '
+        + ', '.join(_missing_r2_env)
+        + '. Set them in Railway so file.url returns absolute R2 URLs; '
+          'otherwise listing images 404 against the Django host.'
+    )
+
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 AWS_S3_SIGNATURE_VERSION = 's3v4'
 AWS_S3_REGION_NAME = 'auto'
 AWS_S3_FILE_OVERWRITE = False
+AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_ENDPOINT_URL = env('AWS_S3_ENDPOINT_URL')
+AWS_S3_CUSTOM_DOMAIN = env('AWS_S3_CUSTOM_DOMAIN')
+AWS_QUERYSTRING_AUTH = env.bool('AWS_QUERYSTRING_AUTH', default=False)
 
 # ── CORS (mobile app + web frontend) ──────────────────────────────────
 # Browsers cannot use Access-Control-Allow-Origin: * together with credentialed
