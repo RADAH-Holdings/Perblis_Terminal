@@ -1,4 +1,4 @@
-"""Production storage (no DB): R2 + Django 5.2 STORAGES + ACL policy."""
+"""Production storage (no DB): Django 5.2 STORAGES + R2 ACL policy."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ def test_production_settings_use_s3_storages_and_omit_object_acl():
     """
     Fresh Django process: STORAGES['default'] must be S3 (Django 5.2 ignores
     DEFAULT_FILE_STORAGE for default_storage alone). AWS_DEFAULT_ACL must be
-    None so boto3 PutObject does not send x-amz-acl.
+    None so boto3 PutObject does not send x-amz-acl (R2 often rejects ACLs).
     """
     code = r"""
 import os

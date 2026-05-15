@@ -82,7 +82,9 @@ AWS_STORAGE_BUCKET_NAME = env('R2_BUCKET').strip().lower()
 AWS_S3_ENDPOINT_URL = env('R2_ENDPOINT').strip()
 AWS_S3_CUSTOM_DOMAIN = _strip_scheme(env('R2_PUBLIC_URL').strip())
 AWS_QUERYSTRING_AUTH = env.bool('AWS_QUERYSTRING_AUTH', default=False)
-# base.py sets public-read; R2 often rejects object ACLs on PutObject.
+# base.py sets public-read; R2 buckets typically disallow object ACLs (PutObject
+# fails with AccessDenied / 400 unless the token includes s3:PutObjectAcl).
+# Public reads come from the bucket / r2.dev public access policy, not per-object ACL.
 AWS_DEFAULT_ACL = None
 
 STORAGES = {
