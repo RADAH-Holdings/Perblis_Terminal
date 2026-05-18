@@ -29,6 +29,13 @@ STORAGES = {
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
+# Disable throttling in dev/test — prevents test flakiness from rate limits
+REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
+    'auth_login': '1000/min',
+    'auth_register': '1000/hour',
+    'auth_password_reset': '1000/hour',
+}
+
 import sentry_sdk
 _sentry_dsn = env('SENTRY_DSN', default='')
 if _sentry_dsn:

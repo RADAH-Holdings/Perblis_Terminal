@@ -8,4 +8,5 @@ urlpatterns = [
     path('<uuid:booking_id>/decline/', views.booking_decline, name='booking-decline'),
     path('<uuid:booking_id>/cancel/', views.booking_cancel, name='booking-cancel'),
     path('<uuid:booking_id>/pay/', views.booking_mark_paid, name='booking-mark-paid'),
+    path('<uuid:booking_id>/complete/', views.booking_complete, name='booking-complete'),
 ]

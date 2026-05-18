@@ -126,11 +126,14 @@ def listing_status(request, listing_id):
     })
 
 
+MAX_LISTING_PHOTOS = 10
+
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser])
 def upload_media(request, listing_id):
-    """Upload a photo to a listing. Owner only."""
+    """Upload a photo to a listing. Owner only. Maximum 10 photos per listing."""
     listing = get_object_or_404(Listing, id=listing_id)
     if listing.owner != request.user:
         return Response(
@@ -144,6 +147,17 @@ def upload_media(request, listing_id):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
+    current_count = listing.media.count()
+    if current_count >= MAX_LISTING_PHOTOS:
+        return Response(
+            {
+                'success': False,
+                'errors': f'Maximum {MAX_LISTING_PHOTOS} photos per listing. '
+                          f'Delete an existing photo before uploading a new one.',
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     media_file = request.FILES['file']
     is_primary = request.data.get('is_primary', 'false').lower() == 'true'
 
@@ -154,7 +168,7 @@ def upload_media(request, listing_id):
         listing=listing,
         file=media_file,
         is_primary=is_primary,
-        display_order=listing.media.count(),
+        display_order=current_count,
     )
 
     return Response({
@@ -163,6 +177,8 @@ def upload_media(request, listing_id):
             'id': str(media.id),
             'file_url': absolute_file_field(request, media.file),
             'is_primary': media.is_primary,
+            'photo_count': current_count + 1,
+            'max_photos': MAX_LISTING_PHOTOS,
         },
     }, status=status.HTTP_201_CREATED)
 
