@@ -50,6 +50,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
     },
   });
   const pay = useMutation({ mutationFn: () => bookingsApi.pay(id), onSuccess });
+  const complete = useMutation({ mutationFn: () => bookingsApi.complete(id), onSuccess });
 
   if (q.isLoading) return <Skeleton className="h-[500px]" />;
   if (!q.data) return null;
@@ -76,6 +77,11 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
             {b.status === "confirmed" && b.payment_status === "unpaid" ? (
               <Button onClick={() => pay.mutate()} disabled={pay.isPending}>
                 Mark paid
+              </Button>
+            ) : null}
+            {b.status === "active" ? (
+              <Button onClick={() => complete.mutate()} disabled={complete.isPending}>
+                Mark completed
               </Button>
             ) : null}
             {b.status === "pending" || b.status === "confirmed" ? (

@@ -87,6 +87,11 @@ export const bookingsApi = {
       .patch<{ success: true; data: Booking }>(`/bookings/${id}/pay/`)
       .then((r) => r.data),
 
+  complete: (id: string) =>
+    apiClient
+      .patch<{ success: true; data: Booking }>(`/bookings/${id}/complete/`)
+      .then((r) => r.data),
+
   calendar: (start_date: string, end_date: string) =>
     apiClient.get<{
       success: true;

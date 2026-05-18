@@ -251,12 +251,38 @@ def booking_mark_paid(request, booking_id):
         )
 
     booking.payment_status = 'simulated_paid'
-    booking.save(update_fields=['payment_status', 'updated_at'])
+    booking.status = BookingStatus.ACTIVE
+    booking.save(update_fields=['payment_status', 'status', 'updated_at'])
 
     print(f"[DEV PAYMENT] Booking {booking.id} marked as paid (simulated) by {request.user.email}")
 
     return Response({
         'success': True,
-        'message': 'Booking marked as paid (simulated). Coordinate payment directly with the other party.',
+        'message': 'Booking marked as paid. Status is now active.',
+        'data': BookingSerializer(booking).data,
+    })
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def booking_complete(request, booking_id):
+    """
+    Mark an active booking as completed. Owner only.
+    Per FSD §9.5.2: once the rental period concludes, booking moves to completed.
+    """
+    booking = get_object_or_404(Booking, id=booking_id, owner=request.user)
+
+    if booking.status != BookingStatus.ACTIVE:
+        return Response(
+            {'success': False, 'errors': f"Cannot complete a booking with status '{booking.status}'. Only active bookings can be completed."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    booking.status = BookingStatus.COMPLETED
+    booking.save(update_fields=['status', 'updated_at'])
+
+    return Response({
+        'success': True,
+        'message': 'Booking marked as completed.',
         'data': BookingSerializer(booking).data,
     })
