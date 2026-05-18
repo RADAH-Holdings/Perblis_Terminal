@@ -1,21 +1,30 @@
-from decimal import Decimal
+import math
 from datetime import date
 
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from listings.models import Listing
+from .commission import calculate_commission
 from .models import Booking, BookingStatus, DurationType
 
 User = get_user_model()
 
-COMMISSION_RATE = Decimal('0.10')
-
 
 def calculate_booking_amounts(listing, start_date, end_date, duration_type):
     """
-    Calculate gross_amount, commission_amount, and owner_payout_amount.
-    Returns a dict with all three values.
+    Calculate gross_amount, commission_amount, and owner_payout_amount
+    using the tiered commission rate structure.
+
+    Duration classification (FSD §9.7.2):
+      - 1 day = daily rate × 1
+      - 2–6 days = daily rate × number of days
+      - 7 days = weekly rate × 1
+      - 8–27 days = weekly rate × ceil(days / 7)
+      - 28+ days = monthly rate × ceil(days / 28)
+
+    Returns a dict with gross_amount, commission_amount, owner_payout_amount,
+    commission_rate (Decimal), and commission_rate_label (str).
     """
     days = (end_date - start_date).days
     if days <= 0:
@@ -29,25 +38,29 @@ def calculate_booking_amounts(listing, start_date, end_date, duration_type):
     elif duration_type == DurationType.WEEKLY:
         if not listing.price_weekly:
             raise serializers.ValidationError('This listing does not have a weekly price set.')
-        weeks = max(1, days // 7)
+        weeks = max(1, math.ceil(days / 7))
         gross = listing.price_weekly * weeks
 
     elif duration_type == DurationType.MONTHLY:
         if not listing.price_monthly:
             raise serializers.ValidationError('This listing does not have a monthly price set.')
-        months = max(1, days // 30)
+        months = max(1, math.ceil(days / 28))
         gross = listing.price_monthly * months
 
     else:
         raise serializers.ValidationError('Invalid duration_type.')
 
-    commission = (gross * COMMISSION_RATE).quantize(Decimal('0.01'))
-    payout = gross - commission
+    commission_amount, rate_decimal, rate_label = calculate_commission(
+        gross, listing.resource_type, duration_type,
+    )
+    payout = gross - commission_amount
 
     return {
         'gross_amount': gross,
-        'commission_amount': commission,
+        'commission_amount': commission_amount,
         'owner_payout_amount': payout,
+        'commission_rate': rate_decimal,
+        'commission_rate_label': rate_label,
     }
 
 
@@ -73,7 +86,8 @@ class BookingSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'renter', 'owner', 'listing_id', 'listing_title',
             'start_date', 'end_date', 'duration_type', 'duration_days',
-            'gross_amount', 'commission_rate', 'commission_amount', 'owner_payout_amount',
+            'gross_amount', 'commission_rate', 'commission_rate_label',
+            'commission_amount', 'owner_payout_amount',
             'renter_note', 'status', 'payment_status',
             'cancellation_reason', 'thread_id', 'created_at', 'updated_at',
         ]
