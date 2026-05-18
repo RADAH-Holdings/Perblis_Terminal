@@ -55,6 +55,10 @@ class Booking(BaseModel):
     commission_rate = models.DecimalField(
         max_digits=5, decimal_places=4, default=0.1000
     )
+    commission_rate_label = models.CharField(
+        max_length=30, default='10%',
+        help_text='Human-readable rate applied, e.g. "12%", "₦2,500 flat"',
+    )
     commission_amount = models.DecimalField(max_digits=15, decimal_places=2)
     owner_payout_amount = models.DecimalField(max_digits=15, decimal_places=2)
 

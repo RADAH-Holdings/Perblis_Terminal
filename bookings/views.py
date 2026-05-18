@@ -91,9 +91,10 @@ def booking_list_create(request):
         duration_type=data['duration_type'],
         renter_note=data['renter_note'],
         gross_amount=amounts['gross_amount'],
-        commission_rate=0.10,
+        commission_rate=amounts['commission_rate'],
         commission_amount=amounts['commission_amount'],
         owner_payout_amount=amounts['owner_payout_amount'],
+        commission_rate_label=amounts['commission_rate_label'],
         status=BookingStatus.PENDING,
     )
 
