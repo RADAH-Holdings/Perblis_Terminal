@@ -1,15 +1,64 @@
+# ──────────────────────────────────────────────────────────────────
+# Terminal monorepo .gitignore
+# backend/ (Django) · portal/ (Next.js/Cloudflare Workers) · app/ (Expo RN)
+# ──────────────────────────────────────────────────────────────────
+
+# ── Python / Django ──────────────────────────────────────────────
 venv/
+.venv/
 __pycache__/
 *.pyc
 *.pyo
-.env
-*.sqlite3
-media/
-staticfiles/
-.DS_Store
+*.pyd
 *.egg-info/
 dist/
 build/
+.eggs/
+*.sqlite3
+.env
+.env.*
+!.env.example
+media/
+staticfiles/
 .pytest_cache/
 htmlcov/
 .coverage
+.coverage.*
+coverage.xml
+*.log
+
+# ── Node / pnpm ──────────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+.pnp.cjs
+
+# ── Next.js (portal/) ───────────────────────────────────────────
+portal/.next/
+portal/out/
+portal/.vercel/
+portal/.cloudflare/
+portal/.wrangler/
+
+# ── Expo / React Native (app/) ───────────────────────────────────
+app/.expo/
+app/dist/
+app/android/
+app/ios/
+app/*.jks
+app/*.keystore
+app/*.p8
+app/*.p12
+app/*.mobileprovision
+
+# ── Build artefacts ──────────────────────────────────────────────
+*.tsbuildinfo
+.turbo/
+
+# ── OS / editors ─────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo

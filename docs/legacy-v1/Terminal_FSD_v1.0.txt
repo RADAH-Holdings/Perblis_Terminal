@@ -1,0 +1,2050 @@
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+          TERMINAL
+
+             Functional Specification Document
+
+                                             Version 1.0 | May 2026
+
+               A One-Stop Digital Marketplace for Heavy Asset Leasing
+
+                                                           Prepared by
+
+                                Nwabueze Chigozirim Victor
+
+                                               Founder & Builder -- Terminal
+
+                                                CONFIDENTIAL -- Internal Use Only
+
+                                                                                                 Nwabueze Chigozirim Victor | May 2026 Page 1
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+1. Document Control
+
+1.1 Document Information
+
+Field                  Detail
+
+Document Title         Terminal -- Functional Specification Document
+
+Document Type          Functional Specification Document (FSD)
+Version                1.0
+
+Status                 Approved for Development
+
+Date                   May 2026
+
+Author                 Nwabueze Chigozirim Victor
+
+Platform               Terminal -- Heavy Asset Leasing Marketplace
+
+Classification         Confidential -- Internal Use Only
+
+1.2 Revision History
+
+Version Date           Author                                       Changes
+                                                                    Initial release
+1.0          May 2026  Nwabueze Chigozirim Victor
+
+1.3 Glossary & Definitions
+
+Term                   Definition
+
+Terminal               The platform being specified in this document. A digital marketplace for
+                       leasing heavy equipment, vehicles, warehouses, terminals, and facilities.
+
+Owner                  A user who lists physical assets on Terminal for others to rent or lease.
+                       Also referred to as "Asset Owner" or "Supplier".
+
+Renter                 A user who searches for, requests, and books assets listed on Terminal.
+                       Also referred to as "Demand Side".
+
+Listing                A single asset or space published on Terminal by an Owner, including
+                       details, pricing, photos, and geolocation.
+
+Booking                A confirmed agreement between an Owner and a Renter for the use of a
+                       listed asset over a specified time period.
+
+GMV                    Gross Merchandise Value -- the total monetary value of all rental
+                       transactions processed through Terminal.
+
+Commission             Terminal's revenue -- a percentage fee or flat fee deducted from the rental
+Asset Class            value at the time of a completed booking.
+
+                       One of the five categories of rentable resources: Heavy Equipment,
+                       Vehicles & Transport, Warehouses, Terminals & Container Yards, or
+                       Facilities & Staging Areas.
+
+                                                                    Nwabueze Chigozirim Victor | May 2026 Page 2
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+KYC         Know Your Customer -- identity verification process for individual users
+KYB         (NIN, BVN, government ID).
+GeoDjango
+PostGIS     Know Your Business -- identity verification for business entities (CAC
+MVP         registration, TIN).
+Ably
+Paystack    Django's built-in geospatial framework enabling map-based search with
+Flat Fee    PostGIS distance queries.
+Simulation
+Wave        PostgreSQL extension enabling geographic data types and spatial queries
+            (distance, radius, bounding box).
+
+            Minimum Viable Product -- the first deployable version of Terminal
+            containing only core functionality.
+
+            Third-party real-time messaging infrastructure used for in-app chat delivery.
+
+            Nigerian payment gateway used for real payment processing (Post-MVP
+            Phase 2).
+
+            A fixed charge of 2,500 applied to any rental transaction valued below
+            25,000, replacing the percentage commission.
+
+            An MVP technique where a real service (payment, OTP, KYC) is replaced
+            with a placeholder that mimics its behaviour without real integration.
+
+            A discrete development phase in Terminal's incremental build plan, each
+            delivering a functional milestone.
+
+                                                                    Nwabueze Chigozirim Victor | May 2026 Page 3
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+2. Introduction
+
+2.1 Purpose of This Document
+
+This Functional Specification Document (FSD) defines the complete functional behaviour of Terminal
+-- a B2B digital marketplace for the leasing of heavy equipment, commercial vehicles, warehouses,
+shipping terminals, container yards, and staging facilities. It serves as the authoritative reference for
+all product decisions, engineering implementation, quality assurance, and stakeholder alignment
+across both the MVP release and the full-scale platform.
+It covers what the system does, who it serves, how it charges, what is in scope for the MVP, what is
+deferred to later phases, and the full vision for the platform at scale. It is not a technical architecture
+document and does not specify implementation internals except where they are functionally relevant.
+
+2.2 Scope
+
+This document covers the following components of the Terminal platform:
+   · Owner Web Application -- a browser-based management portal for asset owners
+   · Renter Mobile Application -- an iOS and Android app for renters to discover and book assets
+   · Backend API -- Django REST Framework API powering both platforms
+   · Admin Operations Panel -- Django Admin interface for platform operations
+   · Business rules governing commission calculation, booking lifecycle, and asset management
+
+The following are outside the scope of this document:
+   · Internal system architecture and database schema design (covered in technical documentation)
+   · DevOps, CI/CD pipeline, and deployment runbooks (covered in infrastructure documentation)
+   · Marketing, go-to-market strategy, and user acquisition
+
+2.3 Intended Audience
+
+   · Nwabueze Chigozirim Victor -- Founder and Platform Builder (primary author and authority)
+   · Development agents and engineers implementing the platform
+   · QA testers performing acceptance testing against specified behaviour
+   · Future investors and partners requiring a clear understanding of platform capabilities
+
+                                                                                                 Nwabueze Chigozirim Victor | May 2026 Page 4
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+3. Product Overview
+
+3.1 Vision Statement
+
+      "Terminal is Nigeria's and Africa's one-stop digital platform for locating,
+      comparing, and leasing heavy equipment, commercial vehicles, warehouses,
+      container terminals, and industrial facilities -- connecting those who own
+      critical infrastructure to those who need it, without Terminal ever owning a
+      single asset."
+
+3.2 Platform Description
+
+Terminal is a pure facilitation marketplace. It does not own, operate, or maintain any physical assets.
+Its value is the connection it enables and the trust it creates between asset owners and renters in a
+market that has historically operated through informal phone-call networks, manual broker
+arrangements, and fragmented paper-based agreements.
+The platform's defining product feature is a geospatial map interface that allows renters to visually
+discover available assets in their area, filter by asset type, and see real distance indicators from their
+current location or any specified point. This map-first approach replaces the fragmented, offline
+nature of the current market with a transparent, digital, searchable layer.
+
+3.3 Market Context
+
+Terminal operates first in Nigeria and West Africa -- one of the most underserved markets globally
+for digital asset leasing infrastructure. The heavy equipment rental market in West Africa is estimated
+at several billion US dollars annually, yet the vast majority of transactions are conducted offline
+through personal relationships, broker commissions, and inefficient phone-based matching.
+There is currently no dominant, properly-built B2B marketplace for the combination of heavy
+equipment, commercial vehicles, warehouses, and container terminals in Nigeria or West Africa.
+Existing players are either traditional fleet owners (NW Equipments, BNN Oil & Gas, FleetPartners),
+informal classifieds (Jiji.ng, GZ Industrial), or regional freight-only platforms not yet operating in
+Nigeria (Trella). Terminal enters a clear and uncontested white space.
+
+3.4 Core Value Propositions
+
+For Owners
+   · Digital storefront -- publish any asset with photos, specifications, pricing, and a precise map pin
+      in minutes
+   · Demand reach -- access to renters beyond existing personal networks
+   · Booking management -- a structured web-based dashboard to manage inquiries, bookings,
+      availability, and earnings
+   · Communication -- structured in-app messaging tied to bookings, replacing fragmented
+      WhatsApp and phone calls
+
+For Renters
+
+                                                                                                 Nwabueze Chigozirim Victor | May 2026 Page 5
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+   · Discovery -- find the exact asset needed via a map with distance indicators and real-time
+      availability
+
+   · Comparison -- compare specifications, pricing, and owner reputation across multiple listings
+   · Booking -- structured request and confirmation workflow with a clear paper trail
+   · Communication -- direct in-app messaging with asset owners within booking context
+
+3.5 What Terminal Is Not
+
+   · Terminal is NOT an asset owner. It facilitates but does not operate equipment, vehicles, or
+      spaces.
+
+   · Terminal is NOT a logistics company. It does not arrange transport or delivery of assets.
+   · Terminal is NOT a bank or financial institution. Commission collection is the extent of its
+
+      financial activity.
+   · Terminal is NOT a sales platform. All transactions are rentals or leases -- not purchases.
+
+                                                                                                 Nwabueze Chigozirim Victor | May 2026 Page 6
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+4. Business Model & Revenue Structure
+
+4.1 Revenue Model Overview
+
+Terminal generates revenue exclusively through transaction commissions charged on successful
+rental bookings. There are no listing fees, subscription fees, deposit charges, insurance fees, or any
+other fees at this stage. The business model is intentionally simple for the MVP phase and will evolve
+with platform maturity.
+
+Commission is the difference between what the renter pays and what the owner receives. Terminal
+sits in the middle and collects its fee before disbursing the remainder to the owner. In the MVP
+phase, commission is calculated and stored at booking time but not yet automatically deducted
+(payment processing is simulated). Real deduction begins in Phase 2 with Paystack integration.
+
+4.2 Commission Rate Structure
+
+Commission rates are tiered by rental duration and vary by asset class. Short-duration rentals (daily)
+carry the highest commission rate; longer-duration rentals (monthly) carry the lowest rate to
+incentivise longer engagements that generate more stable GMV.
+
+Asset Class                   Daily Rate  Weekly Rate  Monthly Rate  Flat Fee
+                                          10%          8%            Applies?
+Heavy Equipment               12%
+(Excavators, Bulldozers,      11%                                    Yes -- 2,500 flat
+Cranes, Compactors,           10%
+Graders)                      10%         9%           7%            Yes -- 2,500 flat
+                              10%
+Vehicles & Transport                      8%           6%            Yes -- 2,500 flat
+(Trucks, Commercial
+Vehicles, Trailers, Tankers)              8%           6%            Yes -- 2,500 flat
+
+Warehouses & Storage                      8%           6%            Yes -- 2,500 flat
+(Dry storage, Cold storage,
+Distribution centres)
+
+Terminals & Container
+Yards (Shipping terminals,
+Container slots, ICD)
+
+Facilities & Staging Areas
+(Laydown yards, Staging
+facilities, Industrial lots)
+
+4.3 Flat Fee Rule
+
+Rule: Any rental transaction where the gross rental value is below 25,000 -- regardless of asset
+class or duration -- attracts a fixed flat fee of 2,500 instead of the percentage-based commission.
+The percentage-based commission is not applied.
+
+Flat Fee Calculation Examples
+
+                                                       Nwabueze Chigozirim Victor | May 2026 Page 7
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+Scenario                Rental Value  Duration  Rate Applied        Terminal Earns
+Truck rental, 1 day     18,000        Daily     Flat fee            2,500
+Small warehouse, 1      22,000        Weekly    Flat fee            2,500
+week
+Excavator, 1 day        80,000        Daily     12%                 9,600
+Warehouse, 1 month      350,000       Monthly   6%                  21,000
+Container slot, 1 week  120,000       Weekly    8%                  9,600
+
+4.4 Commission Calculation Logic
+
+Step 1: Check Threshold
+At the point a booking is confirmed, the system evaluates the gross rental value against the 25,000
+threshold.
+
+Step 2: Apply Correct Rate
+   · If gross value < 25,000: commission = 2,500 (flat)
+   · If gross value  25,000: commission = gross value × applicable percentage rate for (asset
+      class + duration type)
+
+Step 3: Store Values on Booking Record
+The booking record persists four financial fields at confirmation time: gross_amount (what renter
+pays), commission_amount (Terminal's fee), owner_amount (what the owner receives = gross ­
+commission), and commission_rate (the rate or "flat" label applied). These values are locked at
+booking time and do not change even if rates are adjusted later.
+
+Step 4: Disbursement (Phase 2)
+In the MVP phase, commission is calculated and stored but not collected automatically. Real
+payment splitting and automatic disbursement to owners is implemented in Phase 2 via Paystack
+split payments.
+
+4.5 No Other Fees
+
+As of this document, Terminal charges no listing fees, no membership fees, no KYC fees, no
+insurance fees, no featured listing fees, no late fees, and no cancellation fees. This is a deliberate
+decision to reduce friction during early adoption. Fee structures may be introduced in later phases as
+platform volume justifies them.
+
+                                                                    Nwabueze Chigozirim Victor | May 2026 Page 8
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+5. Platform Architecture & Technology
+
+5.1 Two-Platform Strategy
+
+Terminal operates on a deliberate two-platform strategy driven by the distinct jobs that owners and
+renters need to do:
+
+Platform           Owner Web Application                  Renter Mobile Application
+Primary User                                              iOS and Android (React Native + Expo)
+Core Job           Browser (desktop-first, web-
+Key Screen         responsive)                            Renters searching for and booking
+Framework                                                 assets
+Auth               Asset owners managing listings and     Discover on map, evaluate, request,
+Hosting            bookings                               communicate
+                                                          Geospatial map with listing pins and
+                   Manage, monitor, respond, track        filters
+                   revenue                                React Native + Expo (iOS + Android)
+
+                   Booking calendar + inventory           JWT stored in Expo SecureStore
+                   dashboard                              Expo Go (dev)  App Store / Google
+                                                          Play (prod)
+                   Next.js 14 (App Router) + Shadcn/ui +
+                   Tailwind
+
+                   JWT stored in httpOnly cookie
+
+                   Vercel
+
+ Owners can also use the mobile app if they also hold the Renter role, but the web app is their primary
+management surface.
+
+5.2 Backend Technology Stack
+
+Layer              Technology              Rationale
+
+API Framework      Django 5 + Django REST  Battle-tested, rapid development, GeoDjango
+Geospatial Engine  Framework               built-in for geospatial queries
+
+                   GeoDjango + PostGIS     Native distance queries essential for
+                                           Terminal's map-first core feature
+
+Authentication     djangorestframework-    Standard JWT for DRF, role embedded in
+                   simplejwt               payload, stateless
+
+API Documentation  drf-spectacular + Swagger Auto-generates OpenAPI schema from DRF
+
+                   UI                      serializers
+
+Background Tasks   django-q2               Uses existing PostgreSQL, no additional
+File Storage                               Redis required for MVP
+                   django-storages +
+                   Cloudflare R2           S3-compatible, 10GB free tier, fast CDN
+                                           delivery for listing photos
+
+                                                          Nwabueze Chigozirim Victor | May 2026 Page 9
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+Real-Time Messaging Ably Python SDK     Managed WebSocket infrastructure, 6M
+                                        messages/month free, no Django Channels
+Admin Theme       django-unfold         complexity
+
+Settings Management django-environ      Modern UI layer on Django Admin, makes
+                                        operations panel production-usable
+Error Monitoring  Sentry SDK (Django)
+                                        Clean environment variable handling for
+                                        dev/staging/production splits
+
+                                        Real-time error alerting and stack traces in
+                                        production
+
+5.3 Database & Infrastructure
+
+Service           Provider              Purpose                     Estimated Cost
+                                                                    Free tier
+Database          Supabase (PostgreSQL  Primary data store,
+                  + PostGIS)            PostGIS enabled by          $5­20/month
+                                        default                     Free (10GB)
+                                                                    Free (6M msg/mo)
+Backend Hosting   Railway               Django API server           Free tier
+                                        hosting                     Free tier
+                                                                    Free
+Media Storage     Cloudflare R2         Listing photos and
+                                        owner documents
+
+Real-Time         Ably                  WebSocket messaging
+                                        for in-app chat
+
+Web App Hosting   Vercel                Next.js owner web app
+
+Error Tracking    Sentry                Production error
+                                        monitoring
+
+CI/CD             GitHub Actions        Automated testing and
+                                        deployment
+
+Total estimated monthly infrastructure cost for MVP: 5,000­20,000 equivalent ($5­$20
+USD/month).
+
+5.4 Backend App Structure
+
+The Django backend is organized into discrete apps that map directly to Terminal's functional
+modules. Each app owns its models, serializers, views, URLs, and admin registrations
+independently.
+
+Django App        Responsibility
+core
+                  Shared base models (timestamps, UUIDs), permissions (IsOwner, IsRenter),
+accounts          pagination config, and utility functions
+
+                  User model, authentication (register/login/logout/password reset), JWT
+                  issuance, role management, KYC document upload
+
+                                        Nwabueze Chigozirim Victor | May 2026 Page 10
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+listings   All five asset classes (single polymorphic Listing model), CRUD operations,
+search     photo management, listing reports
+bookings
+messaging  Geospatial map search endpoint using GeoDjango PostGIS, distance
+owner      annotation, filtering by resource type and radius
+
+           Booking lifecycle: request, accept, decline, cancel, mark-as-paid; date conflict
+           detection; commission calculation
+
+           Chat threads linked to listings/bookings, messages, Ably token endpoint for
+           real-time delivery
+
+           Owner-specific web app endpoints: dashboard stats, calendar, analytics,
+           settings, bank details, notification preferences
+
+           Nwabueze Chigozirim Victor | May 2026 Page 11
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+6. User Roles & Permissions
+
+6.1 Role Overview
+
+Terminal has four distinct user roles. Three are consumer-facing (Renter, Owner, Both) and one is
+administrative (Admin/Superuser). A user's role is set during onboarding and can be changed from
+their profile settings. Roles are embedded in the JWT payload for API authorization.
+
+6.2 Renter
+
+A Renter is a business or individual who needs to rent or lease assets. They primarily interact with
+Terminal through the mobile application. They cannot create listings.
+
+Renter Capabilities
+   · Register an account and complete a basic profile
+   · Browse the map and search for available assets by type, location, and radius
+   · View listing details including photos, specifications, pricing, and owner information
+   · Send booking requests to owners for specific date ranges
+   · View and manage all personal bookings (active, pending, completed, cancelled)
+   · Communicate with owners via in-app chat within a booking or inquiry context
+   · Upload identity documents for KYC verification
+   · Report fraudulent or inaccurate listings
+
+Renter Restrictions
+   · Cannot create, edit, or delete listings
+   · Cannot view other users' booking records
+   · Cannot access the Owner web dashboard
+
+6.3 Owner
+
+An Owner is a business or individual who possesses physical assets and wishes to monetize idle
+capacity through Terminal. They primarily interact with Terminal through the web application.
+
+Owner Capabilities
+   · All Renter capabilities (unless they have only the Owner role)
+   · Create, edit, publish, pause, and archive listings across all five asset classes
+   · Upload up to 10 photos per listing and manage media
+   · Set daily, weekly, and monthly pricing per listing
+   · Set availability status per listing (available, unavailable, partially booked)
+   · Receive and manage incoming booking requests (accept or decline with reason)
+   · View and track all bookings for their listings including status and payment state
+   · Access a booking calendar showing asset availability and booked periods
+   · Communicate with renters via in-app chat
+   · View earnings summary and commission deductions per booking
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 12
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+   · Configure business profile, bank details, and notification preferences
+
+6.4 Both
+
+A user with the "Both" role can operate as both an Owner and a Renter from a single account. This is
+common for contractors who own equipment but also sometimes need to rent additional assets. The
+role toggle is available in profile settings. The mobile app displays context-appropriate controls
+depending on the active mode.
+
+6.5 Admin (Superuser)
+
+The Admin is the platform operator -- currently Nwabueze Chigozirim Victor. Admin users access
+the platform exclusively through the Django Admin panel (with Unfold theme) and do not use the
+consumer-facing applications. There is a single admin user for MVP; multi-admin roles are deferred.
+
+Admin Capabilities
+   · Full read/write access to all platform records (users, listings, bookings, threads)
+   · Manage users: view, suspend, reactivate, escalate verification tier
+   · Manage listings: activate, pause, archive, override verification tier, add admin notes
+   · Manage bookings: view full booking context, cancel any booking as override
+   · Process KYC queue: review submitted documents, approve or reject with reason
+   · Process listings reports queue: dismiss, warn owner, or remove listing
+   · View commission dashboard: total GMV, total commission earned, booking volume, new users
+
+6.6 Permission Matrix         Renter     Owner      Both       Admin
+                                                                       
+  Action                                         ­                     
+  Register & authenticate                        ­                     ­
+  Browse map & view listings          ­                                ­
+  Send booking request                ­                                ­
+  Create & manage listings                                             ­
+  Accept / decline bookings                                            ­
+  Access in-app chat                  ­                                ­
+  View own booking history            ­          ­          ­          
+  View owner analytics                ­          ­          ­          
+  View commission dashboard           ­          ­          ­          
+  Process KYC queue
+  Suspend users
+
+                                                    Nwabueze Chigozirim Victor | May 2026 Page 13
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+Override listings              ­  ­                                 ­  
+
+Cancel any booking (override)  ­  ­                                 ­  
+
+View platform-wide metrics     ­  ­                                 ­  
+
+                                     Nwabueze Chigozirim Victor | May 2026 Page 14
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+7. Asset Classes
+
+Terminal organises all rentable resources into five primary asset classes. All five share the same
+underlying Listing data model, with a resource_type field distinguishing the category and a flexible
+JSON specifications field accommodating class-specific attributes without requiring separate
+database tables.
+
+7.1 Heavy Equipment
+
+The flagship asset class for Terminal. Covers all forms of earthmoving, construction, mining, and oil
+& gas machinery. High-value assets with the highest commission rates on the platform.
+
+Sub-categories
+   · Earthmoving: Excavators, Bulldozers, Graders, Compactors, Scrapers
+   · Lifting: Mobile Cranes, Tower Cranes, Boom Lifts, Scissor Lifts
+   · Loading: Wheel Loaders, Backhoe Loaders, Skid Steers
+   · Paving & Road: Asphalt Pavers, Road Rollers, Milling Machines
+   · Drilling & Mining: Drilling Rigs, Rock Breakers, Mining Equipment
+   · Concrete & Construction: Concrete Pumps, Transit Mixers, Generators
+
+Typical Listing Specifications
+   · Make, model, and year of manufacture
+   · Operating weight (tonnes), engine power (HP), bucket/load capacity
+   · Fuel type, operating hours logged
+   · Operator included or excluded (operator-inclusive pricing), safety certifications
+
+Commission Rates
+   · Daily: 12% | Weekly: 10% | Monthly: 8% | Below 25,000: 2,500 flat
+
+7.2 Vehicles & Transport
+
+Commercial vehicles for cargo hauling, construction logistics, and industrial transport. This class
+bridges the gap between heavy equipment and logistics.
+
+Sub-categories
+   · Trucks & Haulage: Flatbed Trucks, Tipper/Dump Trucks, Box Trucks, Lowboy Trailers
+   · Tankers: Fuel Tankers, Water Bowsers, Chemical Tankers
+   · Specialised: Crane Trucks, Vacuum Trucks, Concrete Mixer Trucks
+   · Logistics Vehicles: Forklifts (yard-rated), Reach Stackers, Container Handlers
+
+Typical Listing Specifications
+   · Vehicle make, model, year, and registration
+   · Payload capacity (tonnes), container handling capacity (TEU)
+   · Driver included or self-drive, insurance coverage type
+   · Daily/weekly/monthly availability, geographic operating range
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 15
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+Commission Rates
+   · Daily: 11% | Weekly: 9% | Monthly: 7% | Below 25,000: 2,500 flat
+
+7.3 Warehouses & Storage
+
+Covered and uncovered storage and distribution spaces available for rent. Serves importers,
+manufacturers, retailers, 3PLs, and project teams needing temporary or medium-term storage.
+Sub-categories
+
+   · Dry Warehouses: General purpose covered storage
+   · Cold Storage: Temperature-controlled units (pharmaceutical, food & beverage)
+   · Bonded Warehouses: Customs-bonded storage facilities
+   · Distribution Centres: Facilities with loading bays and dock access
+   · Self-Storage Units: Smaller enclosed units for short-term use
+Typical Listing Specifications
+   · Total floor area (sqm), ceiling height (m), loading bay count
+   · Security features (CCTV, guards, access control), fire suppression
+   · Power availability (single phase/three phase), backup generation
+   · Proximity to major roads, ports, and customs checkpoints
+Commission Rates
+   · Daily: 10% | Weekly: 8% | Monthly: 6% | Below 25,000: 2,500 flat
+
+7.4 Terminals & Container Yards
+
+The asset class that gives the platform its name. Shipping terminals, inland container depots (ICDs),
+container yards, and bonded storage facilities for TEU management.
+Sub-categories
+
+   · Port Terminals: Berth access and container handling facilities at or near ports
+   · Inland Container Depots (ICD): Off-dock container storage and customs facilities
+   · Container Yards: Open yard space for stacking and managing shipping containers
+   · Bonded Depots: Customs-approved container storage locations
+Typical Listing Specifications
+   · Total yard area (sqm or acres), container capacity (TEU)
+   · Gate systems, weighbridge availability, reefer plug availability
+   · Customs licensing status, proximity to port or rail head
+   · Handling equipment included (reach stackers, forklifts)
+Commission Rates
+   · Daily: 10% | Weekly: 8% | Monthly: 6% | Below 25,000: 2,500 flat
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 16
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+7.5 Facilities & Staging Areas
+
+Open or semi-covered land and industrial spaces for project staging, marshalling, equipment lay-
+down, and temporary site establishment.
+Sub-categories
+
+   · Laydown Yards: Open yard space for construction or oil & gas project material staging
+   · Fabrication Yards: Enclosed or semi-covered space for industrial fabrication
+   · Marshalling Areas: Temporary project staging land near construction sites
+   · Industrial Land: Zoned industrial land available for short to medium-term lease
+Typical Listing Specifications
+   · Area (sqm or hectares), surface type (concrete, compacted laterite, tarmac)
+   · Access road specifications, weight-bearing capacity
+   · Security, utilities available (power, water, drainage)
+Commission Rates
+   · Daily: 10% | Weekly: 8% | Monthly: 6% | Below 25,000: 2,500 flat
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 17
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+8. MVP Scope & Decisions
+
+8.1 MVP Philosophy
+
+The Terminal MVP is designed around a single strategic principle: prove the core loop before
+building anything else. The core loop is: Owner lists a resource with a location pin  Renter
+discovers it on the map  Renter requests a booking  Owner accepts  Both communicate in-
+app. Everything else is secondary to this loop working flawlessly.
+
+Features that block or delay proving this core loop are either simulated (replaced with a working
+placeholder) or deferred entirely. This includes real payments, real KYC verification, SMS OTP, push
+notifications, analytics, reviews, disputes, and all secondary monetization features.
+
+8.2 What Is In Scope for MVP
+
+Module           What Is Included                                           Build Wave
+Authentication                                                              Wave 1
+                 Register (email + phone + password), Login, Logout,        Wave 1
+                 Password reset via email. JWT issued with role in          Wave 2
+                 payload.                                                   Wave 2
+                                                                            Wave 3
+User Management  Profile creation and editing, role selection
+                 (Owner/Renter/Both), avatar upload, basic profile          Wave 3
+                 completeness. KYC document upload (simulated               Wave 6
+                 approval).
+                                                                            Wave 5
+Listings (All 5  Full CRUD for all five asset classes. Photo upload
+Types)           (up to 10 per listing, Cloudflare R2). Location pin via
+                 map or address geocoding. Daily/weekly/monthly
+                 pricing. Availability toggle. Listing reports by renters.
+
+Map & Search     Full-screen map view with listings plotted as pins.
+                 Radius-based search using GeoDjango/PostGIS.
+                 Distance indicator on each result. Filter by resource
+                 type. Guest browsing (view-only without login).
+
+Bookings         Booking request by renter (dates, note). Owner
+                 accept or decline (with reason). Renter cancel.
+                 Admin override cancel. Date conflict detection (no
+                 double-bookings). Booking status lifecycle.
+                 Commission calculated and stored on confirmation.
+
+Messaging        In-app chat threads tied to listings (enquiry) or
+                 bookings. Real-time delivery via Ably. Message
+                 history persisted to PostgreSQL. Unread message
+                 badge count.
+
+Admin Panel      Commission dashboard (GMV, commission earned,
+                 booking count, new users). User management +
+                 suspension. KYC queue. Listings management +
+                 override. Bookings table + admin cancel. Reports
+                 queue.
+
+Owner Web App    Full Next.js owner dashboard: inventory
+                 management, booking management, booking
+
+                              Nwabueze Chigozirim Victor | May 2026 Page 18
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+                                   calendar, messaging inbox, owner settings and
+                                   profile.
+
+8.3 What Is Out of Scope for MVP
+
+Deferred Feature          Reason for Deferral                                     Target Phase
+
+Real payment              Core loop does not require real money                   Phase 2
+processing (Paystack)     movement to prove concept. Simulated
+                          in MVP.
+
+Commission auto-          Requires real Paystack integration.                     Phase 2
+deduction                 Calculated and stored in MVP but not
+                          collected.
+
+Security deposits and     Requires Paystack hold mechanism.                       Phase 2
+holds                     Not needed to prove core loop.
+
+SMS OTP / Termii          Phone stored but verification is                        Phase 2
+                          simulated (auto-pass). Adds friction
+                          with no MVP benefit.
+
+Real KYC verification     KYC document uploaded but auto-                         Phase 3
+(NIN/BVN)                 approved in MVP. Real queue exists in
+                          admin.
+
+CAC business              Business documents deferred;                            Phase 3
+verification (KYB)        individual KYC is sufficient for MVP
+                          trust signals.
+
+Booking cancellation      Requires real payment rails. Revenue- Phase 2/3
+penalties                 protective but not core loop.
+
+Reviews and ratings       Requires completed booking history to                   Phase 4
+Dispute resolution tools  be meaningful.                                          Phase 4
+
+                          Requires real payments to resolve.
+                          Platform mediation tools built after
+                          payment launch.
+
+Push notifications        In-app badge is sufficient for MVP.                     Phase 3
+(FCM)                     Push delivery is operational complexity
+                          without core value.
+
+Analytics dashboard       No data to display meaningfully at MVP Phase 5
+(owner)                   launch.
+
+Geographic heatmap        Requires transaction volume to be                       Phase 5
+(admin)                   meaningful.
+
+Featured/boosted          Monetisation feature. Not needed until Phase 6
+listings                  supply/demand balance is established.
+
+Commission rate config Rates hardcoded in MVP. Change via                         Phase 6
+
+UI                        code when needed.
+
+Multi-admin roles         Single admin (founder) for MVP. Role                    Phase 6
+                          hierarchy deferred.
+
+                                               Nwabueze Chigozirim Victor | May 2026 Page 19
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+Delivery/transport       Out of scope -- Terminal does not          Not Planned
+coordination             arrange logistics.                         Phase 7
+
+International expansion  Nigeria/West Africa first. Expansion
+                         after market proof.
+
+8.4 MVP Simulation Strategy
+
+Several production features are replaced by simulations in the MVP. Each simulation is built cleanly
+so the real implementation slots in later without touching the surrounding business logic.
+
+Feature               MVP Simulation                     Real Implementation (Post-MVP)
+SMS OTP (Termii)                                         Termii integration -- real SMS OTP to
+                      OTP logged to server console.      registered phone number
+Email Verification    Phone verified as True
+                      automatically.                     Resend link-based verification with 24-
+KYC Verification                                         hour expiry
+                      Auto-verified on register.
+Payment               Welcome email sent via Resend      Admin review queue in Django Admin --
+Processing            but no blocking gate.              manual review and decision
+
+Security Deposit      Documents upload accepted and      Paystack checkout with automatic
+                      auto-approved. Status set to       commission split on confirmation
+Commission            "basic verified".
+Deduction                                                Paystack card hold; released on
+                      "Pay via agreement" status +       successful booking completion
+Push Notifications    owner/renter manually mark         Paystack split payment -- owner
+(Expo/FCM)            booking as paid via a button.      receives net amount automatically
+
+Listing Verification  Field exists in data model with    Expo push notifications via FCM/APNs
+Badge                 value 0. Not collected.            for booking events and messages
+
+                      Calculated and stored on           Admin manual review and tier upgrade
+                      Booking record. No actual money    (Basic / Verified / Premium)
+                      movement.
+
+                      In-app unread badge counter
+                      only. No push to device home
+                      screen.
+
+                      All published listings receive
+                      "Basic" tier badge automatically.
+
+8.5 MVP Success Criteria
+
+Product Criteria
+   · Owner can register, create a listing with photos and a map pin, and publish it in under 10
+      minutes
+   · Renter can open the app, see listings on the map with distance indicators, and find the right
+      asset
+   · Renter can send a booking request and owner can accept or decline it
+   · Both parties can communicate in real-time via in-app chat within a booking context
+   · Admin can view all users, listings, bookings, and commission data from the admin panel
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 20
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+   · All five asset classes can be listed and searched
+Technical Criteria
+
+   · Map search query returns results in under 500ms on 4G mobile
+   · PostGIS distance calculations are accurate (verified against real-world coordinates)
+   · Real-time messages deliver without page refresh via Ably
+   · Photo upload to Cloudflare R2 works on both iOS and Android
+   · JWT auth protects all sensitive endpoints correctly
+   · API documentation is live at /api/docs/ via drf-spectacular
+Operational Criteria
+   · At least 10 real listings live at internal beta launch
+   · At least 5 complete booking flows tested end-to-end with real users
+   · Platform operable by one administrator via Django Admin
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 21
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+9. Functional Requirements -- MVP
+
+9.1 Module 1: Authentication
+
+Authentication is the entry gate to Terminal. All authenticated routes require a valid JWT. The JWT
+payload includes the user's ID, email, and role(s).
+
+9.1.1 Registration
+   · System accepts: full name, email address, phone number (Nigerian format), and password
+   · Password must meet: minimum 8 characters, at least one uppercase letter, one number
+   · Email must be unique across the platform -- duplicate email registration is rejected with a clear
+      error
+   · Phone number is stored and associated with the account but OTP verification is simulated
+      (auto-pass in MVP)
+   · Upon successful registration: user account is created, welcome email is sent via Resend, email
+      is auto-verified (MVP simulation), JWT is returned immediately
+   · User role defaults to "Renter" on registration and can be changed in profile settings
+
+9.1.2 Login
+   · Accepts: email and password
+   · Returns: access token (JWT, 1-hour expiry) and refresh token (7-day expiry)
+   · Failed login attempts are rate-limited: 5 consecutive failures trigger a 15-minute lockout
+   · JWT payload contains: user_id, email, role, is_active, is_verified
+
+9.1.3 Token Refresh
+   · A valid refresh token can be exchanged for a new access token without re-authentication
+   · Expired refresh tokens require full re-login
+
+9.1.4 Logout
+   · Client-side: discard stored tokens
+   · Server-side: refresh token is blacklisted to prevent reuse
+
+9.1.5 Password Reset
+   · User requests reset by supplying registered email address
+   · System sends a time-limited reset link (valid for 1 hour) via Resend
+   · Link contains a unique, single-use token
+   · User submits new password via the reset link; old password is invalidated
+
+9.2 Module 2: User Management
+
+9.2.1 User Profile
+   · Fields: full name, email (non-editable after registration), phone number, profile photo, account
+      role, date joined, verification status
+   · User can update: full name, phone number, profile photo
+   · Profile photo uploaded to Cloudflare R2; resized to 400x400px on server before storage
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 22
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+9.2.2 Role Management
+   · User can switch between Renter, Owner, and Both from profile settings
+   · Switching to Owner role prompts the user to complete an owner profile (business name, bank
+      details) before publishing listings
+   · Role change takes effect immediately; JWT reflects updated role on next login or token refresh
+
+9.2.3 Owner Profile
+   · Additional fields required for the owner role: business name, business description, business
+      logo, bank name, bank account number, bank account name
+   · Bank details are stored encrypted at rest
+   · Notification preferences: new booking request, booking confirmed, new message, booking
+      cancelled (all default ON)
+
+9.2.4 KYC Document Upload (Simulated in MVP)
+   · User can upload one identity document (National ID, International Passport, Driver's License)
+   · Accepted formats: JPEG, PNG, PDF; maximum file size: 5MB
+   · Uploaded document is stored securely on Cloudflare R2 (private bucket, not public URL)
+   · In MVP: document is auto-approved upon upload; verification status is set to "basic_verified"
+   · Post-MVP: document enters admin KYC queue for manual review
+
+9.3 Module 3: Listings
+
+9.3.1 Listing Creation
+   · Only users with Owner or Both roles can create listings
+   · Required fields: title, description (min 50 characters), resource type, sub-category, daily price (in
+      Naira), at least 1 photo, and a precise location (geographic coordinates)
+   · Optional fields: weekly price, monthly price, specifications (JSON object with type-specific
+      fields), availability notes, minimum booking duration
+   · Photos: minimum 1, maximum 10 per listing. Each uploaded to Cloudflare R2 and served via
+      CDN URL. Accepted formats: JPEG, PNG, WebP. Maximum size: 10MB per photo.
+   · Location can be set by: dropping a pin on an interactive map (MapBox), or entering an address
+      which is geocoded to coordinates server-side
+   · Every listing requires a valid coordinate pair (latitude/longitude) to be published -- listings
+      without location cannot be set to active
+   · Listing status on creation defaults to "draft"; owner must explicitly publish
+
+9.3.2 Listing Status Lifecycle
+   · draft  Owner created but not yet published
+   · active  Published and visible on the map to all users
+   · paused  Owner temporarily removed from map (asset occupied or under maintenance)
+   · archived  Permanently removed from map; not deletable (booking history preserved)
+   · removed_by_admin  Admin-removed listing; owner notified with reason
+
+9.3.3 Listing Edit & Management
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 23
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+   · Owner can edit any field of a listing at any time (title, description, pricing, photos, location,
+      availability)
+
+   · Editing an active listing does not disrupt existing confirmed bookings
+   · Owner can reorder listing photos via drag-and-drop on the web app
+   · Listing deletion is not permitted if there are any active or confirmed bookings against it;
+
+      archiving is used instead
+
+9.3.4 Listing Reports
+   · Any authenticated renter can report a listing for: fraudulent listing, inaccurate information,
+      inappropriate content, duplicate listing, or no longer available
+   · Reports enter an admin queue and do not immediately affect listing visibility
+   · A listing accumulating 3 or more reports in 30 days is flagged for priority admin review
+
+9.4 Module 4: Search & Map Discovery
+
+The map is the core product experience. It must be fast, accurate, and intuitive. All location data is
+stored as PostGIS PointField and all distance queries use GeoDjango's native spatial lookups.
+
+9.4.1 Map View
+   · Default state: map centred on user's current location (requires location permission on mobile)
+   · If location permission denied: map defaults to Lagos Island (6.4541, 3.3947)
+   · All active listings within the visible map viewport are loaded as pins
+   · Each pin visually differentiates asset class (distinct icon or colour per category)
+   · Tapping/clicking a pin shows a preview card: listing photo, title, distance from user, and starting
+      price
+   · Tapping the preview card navigates to the full listing detail page
+
+9.4.2 Search & Filter
+   · Filter by resource type: All / Heavy Equipment / Vehicles & Transport / Warehouses / Terminals
+      & Container Yards / Facilities & Staging Areas
+   · Radius search: user can set a search radius (5km, 10km, 25km, 50km, 100km, or custom)
+   · Text search by keyword (listing title and description)
+   · Price filter: minimum and maximum daily price
+   · Applying any filter refreshes the map pins in real-time
+
+9.4.3 Distance Indicators
+   · Every listing in search results and on the map shows a calculated straight-line distance from the
+      user's current location (or the searched point if a location was specified)
+   · Distance displayed in kilometres with one decimal place (e.g., "4.3 km from you")
+   · Distance is recalculated server-side using PostGIS ST_Distance -- it is not estimated client-
+      side
+
+9.4.4 Guest Browsing
+   · Map and listing browse is accessible without an account
+   · Guest users see listings and distances but cannot submit booking requests or send messages
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 24
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+   · Attempting a protected action as a guest redirects to the registration/login screen
+
+9.5 Module 5: Bookings
+
+9.5.1 Booking Request
+   · Authenticated renter taps "Request Booking" on a listing detail page
+   · Renter selects: start date, end date, and an optional note to the owner
+   · System determines rental duration type: 1 day = daily rate; 2­6 days = daily rate × days; 7­27
+      days = weekly rate × weeks; 28+ days = monthly rate × months
+   · System calculates gross_amount, commission_amount, owner_amount, and commission_rate
+      at this stage
+   · System checks for date conflicts: no active or confirmed booking can overlap the requested
+      period for the same listing
+   · If conflict exists: booking request is rejected with a message indicating the conflicting dates
+   · If no conflict: booking is created with status "pending_owner"
+   · Owner is notified in-app (unread badge increment) of the new booking request
+
+9.5.2 Booking Status Lifecycle
+
+Status            Triggered By               Description
+
+pending_owner     Renter submits request     Awaiting owner decision. Listing dates
+                                             are soft-blocked.
+accepted          Owner accepts request
+declined          Owner declines request     Owner has agreed. Awaiting payment.
+
+cancelled_renter  Renter cancels             Owner rejected with reason. Listing
+                                             dates released.
+cancelled_owner   Owner cancels
+                                             Renter withdrew request or active
+cancelled_admin   Admin override             booking. Dates released.
+
+active            Mark as paid (simulated)   Owner cancelled confirmed booking.
+                                             Dates released.
+completed         End date passes with no
+disputed          cancellation               Admin cancelled booking. Both parties
+                                             notified.
+                  Either party raises issue
+                  (Post-MVP)                 Payment confirmed. Booking is live.
+                                             Asset in use.
+
+                                             Rental period concluded successfully.
+
+                                             Booking under platform mediation
+                                             review.
+
+9.5.3 Owner Actions on Booking
+   · Owner can accept a pending booking -- status moves to "accepted"; commission calculated
+      and stored
+
+   · Owner can decline a pending booking and must provide a reason -- status moves to "declined"
+
+                                             Nwabueze Chigozirim Victor | May 2026 Page 25
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+   · Owner can cancel an already-accepted booking -- status moves to "cancelled_owner"; renter
+      notified
+
+9.5.4 Renter Actions on Booking
+   · Renter can cancel a pending or accepted booking at any time in MVP -- status moves to
+      "cancelled_renter"
+
+9.5.5 Booking Detail View
+   · Both owner and renter can view full booking detail: listing summary, dates, financial breakdown
+      (gross amount, commission, owner amount), status, and communication thread
+
+9.6 Module 6: Messaging
+
+9.6.1 Thread Types
+   · Enquiry Thread -- created when a renter sends a message from a listing detail page before
+      booking
+   · Booking Thread -- created when a booking is confirmed; tied to a specific booking record
+
+9.6.2 Messaging Behaviour
+   · Messages are sent via REST API and stored in PostgreSQL
+   · Real-time delivery to both parties is handled by Ably -- messages appear without page refresh
+   · Message history is always available regardless of whether the recipient was online at send time
+   · Only the two parties to a booking/listing can access the thread for that record
+   · Unread message count is tracked per user and displayed as a badge on the Messages icon
+
+9.6.3 Ably Token Endpoint
+   · Client authenticates by requesting a short-lived Ably token from the backend
+   · The Ably API key is never exposed to the client -- all token generation happens server-side
+   · In development: if ABLY_API_KEY is unset, system logs messages to console and does not
+      crash
+
+9.7 Module 7: Commission Calculation
+
+9.7.1 Trigger
+Commission is calculated automatically when a booking moves from "pending_owner" to "accepted".
+The values are immutable after this point.
+
+9.7.2 Duration Classification Logic
+   · 1 day = Daily rate. Multiplier = 1.
+   · 2­6 days = Daily rate × number of days.
+   · 7 days = Weekly rate × 1.
+   · 8­27 days = Weekly rate × (ceil(days/7)).
+   · 28+ days = Monthly rate × (ceil(days/28)).
+
+9.7.3 Commission Rate Selection
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 26
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+   · Gross amount < 25,000  commission = 2,500 flat regardless of duration or asset class
+   · Gross amount  25,000  apply percentage from commission table (Section 4.2)
+
+9.7.4 Stored Fields on Booking Record
+   · gross_amount -- total amount renter is to pay (owner sets listing price × duration)
+   · commission_amount -- Terminal's fee (calculated per rules above)
+   · owner_amount -- gross_amount minus commission_amount (what owner should receive)
+   · commission_rate -- the rate applied as a string: "12%", "10%", "2,500 flat", etc.
+
+9.8 Module 8: Admin Operations Panel
+
+The Admin Panel is built on Django Admin with the django-unfold theme. It is accessible only to
+superuser accounts. In MVP, there is a single admin: the platform founder.
+
+9.8.1 Commission Dashboard
+   · Total gross transaction volume for current month and all-time
+   · Total commission earned by Terminal for current month and all-time
+   · Booking count by status (pending / accepted / active / completed / cancelled)
+   · New user registrations this week and this month
+
+9.8.2 User Management
+   · View all users with sortable/filterable table (name, email, role, verification status, date joined,
+      last active)
+   · User detail: all profile information, all their listings, all their bookings, all their documents
+   · Actions: suspend user (prevents login), reactivate user, escalate verification tier, add admin
+      note
+
+9.8.3 KYC Queue
+   · List of all users with uploaded documents pending review
+   · View the document (rendered inline or downloadable)
+   · Approve (verification status updated) or reject (with mandatory written reason)
+
+9.8.4 Listings Management
+   · All listings table filterable by type, city, status, owner, date created
+   · Listing detail view accessible by admin
+   · Actions: activate, pause, archive, remove with reason, override verification tier, add admin note,
+      view reported listings queue
+
+9.8.5 Bookings Management
+   · All bookings table filterable by status, resource type, date range, value
+   · Booking detail: full context -- both parties, listing, dates, amounts, communication thread
+   · Actions: cancel booking as admin (with reason, both parties notified)
+
+9.8.6 Reports Queue
+   · All pending listing reports with reporter, listing, reported reason, and date
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 27
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+   · Actions: dismiss (no action), warn owner (automated in-app notification), remove listing (moves
+      listing to removed_by_admin status)
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 28
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+10. Owner Web Application
+
+10.1 Overview
+
+The Owner Web Application is a browser-based management portal built in Next.js 14 (App Router)
+that serves as the primary interface for asset owners to manage their Terminal presence. It is
+desktop-first but fully responsive for tablet use. It is not a general-purpose application -- every
+screen serves a specific operational need for an asset owner.
+
+10.2 Page Structure
+
+Route               Screen Name            Primary Purpose
+
+/dashboard          Owner Dashboard        Overview: pending requests, unread
+                                           messages, bookings this week,
+/inventory          Inventory Table        commission earned this month
+/inventory/new      Create Listing
+/inventory/:id      Listing Detail / Edit  All listings table with create, edit,
+/bookings           Bookings Table         pause, archive actions
+/bookings/calendar  Booking Calendar
+                                           Multi-step form to create a new listing
+/bookings/:id       Booking Detail         with photos and location
+/messages           Messaging Inbox
+/messages/:id       Thread View            View and edit a single listing including
+/analytics          Analytics (Post-MVP)   photo management
+/settings           Settings
+                                           All bookings across all listings,
+                                           filterable by status and date
+
+                                           Visual calendar: listings on Y-axis,
+                                           dates on X-axis, bookings as coloured
+                                           blocks
+
+                                           Full single booking view with actions
+                                           (accept, decline, cancel) and chat
+
+                                           All threads: enquiries and booking
+                                           chats, sorted by last message
+
+                                           Full thread history with real-time
+                                           message composer
+
+                                           Revenue charts, listing performance,
+                                           top listings, fill rate
+
+                                           Owner profile, business details, bank
+                                           account, notification preferences
+
+10.3 Dashboard (/dashboard)
+
+The dashboard is a single glance view. It answers four questions: What needs my attention right
+now? How much have I earned this month? How active are my listings? Do I have unread
+messages?
+
+   · Pending booking requests counter -- with a direct link to each pending request
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 29
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+   · Unread messages counter -- with a direct link to the messages inbox
+   · Commission earned this month -- running total in Naira
+   · Active listings count and total listings count
+   · Recent activity feed -- last 10 booking events and messages (chronological)
+   · Quick action buttons: "Add New Listing", "View All Bookings"
+
+10.4 Inventory Management (/inventory)
+
+The central hub for managing all listings. Designed for owners with large asset portfolios.
+   · Sortable table: title, asset class, status, daily price, active bookings, date created
+   · Filter by: status (all / active / paused / archived / removed), asset class, price range
+   · Bulk actions: pause selected, archive selected
+   · Status badge with colour coding: Active (green), Paused (amber), Archived (grey), Removed
+      (red)
+   · Create New Listing button  navigates to /inventory/new
+
+Create / Edit Listing Form
+   · Step 1: Asset class and sub-category selection
+   · Step 2: Title, description, and specifications (type-specific fields rendered based on class
+      selection)
+   · Step 3: Pricing (daily required; weekly and monthly optional)
+   · Step 4: Photo upload with drag-and-drop reordering and cover photo selection
+   · Step 5: Location -- drop pin on MapBox map or search address for geocoding
+   · Step 6: Review and publish
+
+10.5 Booking Management (/bookings)
+
+   · Table showing all bookings across all owner's listings
+   · Columns: listing name, renter name, dates, duration, gross amount, commission, status
+   · Filter by: booking status, listing, date range, asset class
+   · Colour-coded status: Pending (amber), Accepted (blue), Active (green), Completed (grey),
+
+      Cancelled (red)
+   · Click any row  navigate to booking detail (/bookings/:id)
+
+Booking Detail (/bookings/:id)
+   · Listing snapshot (photo, title, dates, duration type)
+   · Renter profile (name, verification status, booking history with Terminal)
+   · Financial breakdown: Gross Amount / Terminal Commission / You Receive
+   · Action buttons (context-dependent on status):
+          -- If pending_owner: "Accept Booking" and "Decline Booking" (requires reason)
+          -- If accepted: "Mark as Active" (MVP simulation of payment) and "Cancel Booking"
+          -- If active: "Mark as Completed"
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 30
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+10.6 Booking Calendar (/bookings/calendar)
+
+The booking calendar is the most operationally valuable screen in the web app. It gives owners with
+multiple assets an immediate visual understanding of their portfolio's utilisation.
+
+   · Y-axis: all owner's active listings (grouped by asset class)
+   · X-axis: dates (default view: current month, navigable by month)
+   · Confirmed and active bookings displayed as colour-coded blocks spanning their duration
+   · Pending bookings shown as a lighter/dashed block to indicate tentative hold
+   · Clicking any block navigates to that booking's detail page
+   · Cells with no bookings are clearly visible as available periods
+
+10.7 Messaging Centre (/messages)
+
+   · Unified inbox showing all threads: enquiries and booking chats
+   · Each thread shows: listing name, other party's name and avatar, last message preview,
+
+      timestamp, unread count badge
+   · Sorted by most recent message (default)
+   · Real-time updates via Ably -- new messages appear without page refresh
+   · Thread view: full message history, composer with send button
+   · Booking threads include a summary panel (booking dates, status, listing) alongside the chat
+
+10.8 Settings (/settings)
+
+   · Personal Info: full name, phone number, profile photo
+   · Business Profile: business name, business description, business logo
+   · Bank Details: bank name, account number, account name (displayed masked; editable)
+   · Notification Preferences: toggles for each notification type (new booking request, booking
+
+      confirmed, new message, booking cancelled)
+   · Account: change password, delete account (soft-delete, 30-day recovery window)
+   · Verification Status: display current KYC status with prompt to upload documents if not yet
+
+      verified
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 31
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+11. Renter Mobile Application
+
+11.1 Overview
+
+The Renter Mobile Application is a React Native + Expo application available on iOS and Android. It
+is the primary discovery and transaction surface for renters. The design philosophy is map-first: the
+map is the home screen, not a buried feature. Every other screen radiates from the map.
+
+11.2 Screen Structure
+
+Screen           Description
+
+Map / Home       Full-screen interactive map centred on user location. All active listings
+                 plotted as pins. Persistent filter bar at top. The default landing screen.
+
+Listing Detail   Full listing information: photo gallery, title, description, specifications,
+                 distance, price breakdown, owner info, availability calendar, Enquire and
+                 Request Booking CTAs.
+
+Search Results   List view of search results with distance indicator and key specs --
+                 accessible by switching from map view.
+
+Request Booking  Date picker for start/end dates, duration auto-classification, price
+                 calculation preview, note to owner field, confirmation screen.
+
+My Bookings      Tabbed view: Active, Pending, Completed, Cancelled. Each booking
+                 card shows listing, dates, status, amount.
+
+Booking Detail   Full single booking -- listing details, financial breakdown, current status,
+                 action buttons, link to chat thread.
+
+Messages         All threads list. Each thread shows last message preview, listing name,
+                 unread count. Real-time via Ably.
+
+Chat Thread      Full message history with composer. Booking context card at top for
+                 booking threads.
+
+Profile          Personal info, verification status, document upload, notification settings,
+                 role switcher (if Both), account settings.
+
+Onboarding       Role selection (Renter / Owner / Both), profile completion steps, optional
+                 KYC prompt.
+
+11.3 Map & Discovery (Home Screen)
+
+   · Full-screen Mapbox map loads immediately on app open -- it is the first thing the user sees
+   · User's current location is requested on first open. If denied, defaults to Lagos Island.
+   · All active listings within the visible viewport load as category-coded pins
+   · Pins are clustered at lower zoom levels; individual pins appear as user zooms in
+   · Persistent bottom sheet filter bar: All / Equipment / Vehicles / Warehouses / Terminals /
+
+      Facilities
+   · Persistent search icon in header allows text search and radius configuration
+   · Tapping a pin shows a bottom card preview: photo, title, distance, starting price
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 32
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+   · Tapping the preview card opens the full Listing Detail screen
+   · Map re-renders automatically when filters are applied or map viewport is panned/zoomed
+
+11.4 Listing Detail
+
+   · Scrollable screen with full-width photo gallery (swipeable)
+   · Title, asset class badge, and distance from user's location
+   · Owner profile card: name, verification badge, average response time (post-MVP), listing count
+   · Specifications section: rendered dynamically based on asset class (shows relevant technical
+
+      fields)
+   · Pricing grid: Daily rate / Weekly rate / Monthly rate (if set)
+   · Availability notes from the owner
+   · Location: small static map preview showing the listing's exact location
+   · Two CTAs: "Enquire" (opens messaging thread) and "Request Booking" (opens booking flow)
+   · Report Listing option accessible from the overflow menu (three-dot icon)
+
+11.5 Booking Request Flow
+
+  1. Renter taps "Request Booking" on Listing Detail
+  2. Date picker: select start date  end date. Unavailable dates (existing bookings) are blocked.
+  3. System shows duration classification: e.g., "7 days = 1 weekly rental" or "3 days = 3 daily
+
+      rentals"
+  4. Price preview: Gross Amount (what you'll pay), Terminal Fee, Owner Receives -- full
+
+      transparency
+  5. Optional: add a note to the owner (e.g., "I have a site in Lekki Phase 1, need delivery by 7 AM")
+  6. Confirmation screen: review all details before submitting
+  7. Booking request submitted  owner notified  renter sees booking in "My Bookings 
+
+      Pending"
+
+11.6 My Bookings
+
+   · Four tabs: Pending (awaiting owner decision), Active (confirmed and ongoing), Completed,
+      Cancelled
+
+   · Each booking card: listing photo, title, dates, duration, total amount, current status
+   · Tapping a card navigates to Booking Detail
+   · Active tab is highlighted when there are pending requests awaiting owner action
+
+11.7 Profile & Settings
+
+   · Display name, phone number, verification status (with prompt if unverified)
+   · KYC document upload (MVP: auto-approved; Post-MVP: admin review)
+   · Role switcher: if user has Both role, a toggle to switch between Renter and Owner mode
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 33
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+   · Notification preferences (in-app notifications only in MVP)
+   · Logout and account management (change password, delete account)
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 34
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+12. End-to-End User Journeys
+
+12.1 Journey 1 -- Owner Lists a Resource
+
+Scenario: Tunde owns five excavators. He wants to rent idle capacity through Terminal.
+  8. Tunde registers on the web app with email and password. Welcome email received. Auto-
+      verified (MVP).
+  9. He selects his role as "Owner" on the onboarding screen and is prompted to complete his
+      business profile.
+  10. He navigates to /inventory  clicks "Add New Listing".
+  11. Step 1: Selects "Heavy Equipment"  "Excavators".
+  12. Step 2: Enters title ("CAT 320 Excavator -- Available for Hire"), a detailed description, and
+      fills in the excavator specification fields (weight: 22 tonnes, bucket capacity: 1.2m³, operating
+      hours: 3,200).
+  13. Step 3: Sets daily price 75,000, weekly price 450,000, monthly price 1,500,000.
+  14. Step 4: Uploads 8 photos of the machine from multiple angles. Drags first photo to be cover.
+  15. Step 5: Drops a pin on the map at his equipment yard in Apapa, Lagos (6.4498° N, 3.3553°
+      E).
+  16. Step 6: Reviews all details and clicks "Publish". Listing goes live on the map immediately.
+
+Result: Tunde's excavator appears as a pin on Terminal's map, discoverable by any renter in
+Nigeria.
+
+12.2 Journey 2 -- Renter Discovers and Books
+
+Scenario: Emeka is a site manager in Aba. He needs an excavator for 2 weeks starting Monday.
+  17. Emeka downloads the Terminal mobile app and registers as a Renter.
+  18. App opens to the full-screen map, centred on his location in Aba.
+  19. He filters by "Heavy Equipment" -- several pins appear within 50km of his location.
+  20. He taps a pin 12.4km away. Preview card shows: "CAT 320 Excavator", 75,000/day, 12.4
+      km.
+  21. He taps the card  Listing Detail screen. Scrolls through photos, reads the specs, checks the
+      price grid.
+  22. He sees the weekly price is 450,000. Taps "Request Booking".
+  23. He selects start: Monday, end: Sunday 2 weeks later (14 days). System classifies as "2
+      weekly rentals".
+  24. Price preview: Gross 900,000 | Terminal commission 90,000 (10%) | Owner receives
+      810,000.
+  25. He adds a note: "Site is off Aba-Owerri Road. Will need the operator as well." Submits
+      request.
+  26. Emeka sees the booking in My Bookings  Pending tab.
+
+Result: Booking request sent. Owner notified. Listing dates soft-blocked for 24 hours.
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 35
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+12.3 Journey 3 -- Owner Responds and Both Communicate
+
+Scenario: Tunde receives Emeka's booking request and manages the conversation.
+  27. Tunde receives an in-app notification (unread badge increments on his web dashboard).
+  28. He navigates to /bookings  sees the new pending booking from Emeka.
+  29. Booking detail shows: listing, dates, Emeka's profile, and the financial breakdown.
+  30. He clicks "Accept Booking". Status changes to "Accepted". Emeka is notified.
+  31. A booking chat thread is automatically created. Tunde sends: "Confirmed. Operator will be
+      on-site at 7 AM. Need gate access. Please call me on arrival."
+  32. Emeka receives the message in real-time on his mobile. He replies with the site coordinator's
+      number.
+  33. Both parties have a timestamped, searchable conversation record tied to the booking.
+  34. Emeka marks the booking as paid (MVP simulation). Status moves to "Active".
+
+Result: Booking confirmed. Asset in use. Both parties have a clear record of the agreement.
+
+12.4 Journey 4 -- Admin Operates the Platform
+
+Scenario: The admin monitors platform health and processes a listing report.
+  35. Admin logs in at /admin/ -- sees the Commission Dashboard: 3 new bookings this week,
+      185,000 commission earned this month, 47 active listings, 12 new users this week.
+  36. Admin sees a listing report in the Reports Queue: "Fake listing -- equipment photos are from
+      Google Images."
+  37. Admin opens the listing, reviews the photos and description, cross-references against known
+      equipment databases.
+  38. Admin selects "Remove Listing" with reason: "Suspected fraudulent listing. Photos appear
+      stock. Owner has been warned." Listing status moves to removed_by_admin.
+  39. Admin navigates to Users  sees the flagged owner. Adds an admin note to their profile.
+
+Result: Fraudulent listing removed. Platform integrity maintained. Owner record flagged.
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 36
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+13. Data Model Summary
+
+All models inherit from a shared BaseModel providing: id (UUID, primary key), created_at
+(DateTimeField), and updated_at (DateTimeField). The following is a functional summary, not a
+technical schema.
+
+13.1 User             Type            Description
+                      UUID            Primary key -- generated on creation
+  Field               String          User's full name
+  id                  String          Unique. Used for login and all communications.
+  full_name           String          Nigerian phone number. Stored but not verified in
+  email                               MVP.
+  phone_number        Hashed String   bcrypt-hashed password. Never stored or returned
+                                      in plaintext.
+  password            Enum            renter | owner | both
+                      Boolean         False = suspended account. Cannot log in.
+  role                Boolean         True when KYC documents approved.
+  is_active           Enum            none | basic_verified | identity_verified |
+  is_verified                         business_verified
+  verification_tier   URL             CDN URL of uploaded photo on Cloudflare R2.
+                      DateTime        Auto-set on registration.
+  profile_photo
+  date_joined
+
+13.2 OwnerProfile     Type            Description
+                      FK  User        OneToOne. Auto-created when Owner role is
+  Field                               activated.
+  user                                Trading or company name.
+                                      About the owner's business.
+business_name         String          CDN URL on Cloudflare R2.
+                                      Nigerian bank name.
+business_description  Text            NUBAN account number. Encrypted at rest.
+                                      As registered with the bank.
+business_logo         URL             Default: True.
+                                      Default: True.
+bank_name             String
+
+bank_account_number Encrypted String
+
+bank_account_name     String
+
+notif_new_booking     Boolean
+
+notif_booking_confirmed Boolean
+
+                                      Nwabueze Chigozirim Victor | May 2026 Page 37
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+notif_new_message        Boolean      Default: True.
+notif_booking_cancelled  Boolean      Default: True.
+
+13.3 Listing             Type         Description
+                         UUID
+  Field                  FK  User     Primary key.
+  id
+  owner                  Enum         The user who created this listing. Must have Owner
+                                      or Both role.
+  resource_type          String
+                                      heavy_equipment | vehicle_transport | warehouse |
+  sub_category           String       terminal_container | facility_staging
+                         Text
+  title                               Sub-type within the resource_type class (e.g.,
+  description            JSON         "Excavator").
+
+  specifications         Decimal      Listing headline. Max 120 characters.
+                         Decimal
+  daily_price            Decimal      Detailed listing description. Minimum 50 characters
+  weekly_price           PointField   to publish.
+  monthly_price
+  location               String       Flexible key-value store for type-specific technical
+                                      specs.
+  address_text           String
+                         Enum         Price in Naira per day. Required to publish.
+  city
+  status                 Enum         Price in Naira per week. Optional.
+
+  verification_tier      Text         Price in Naira per month. Optional.
+                         Integer
+  availability_notes                  PostGIS geographic point (longitude, latitude).
+  report_count                        Required to publish.
+
+                                      Human-readable address string for display
+                                      purposes.
+
+                                      City/area for filtering and display.
+
+                                      draft | active | paused | archived |
+                                      removed_by_admin
+
+                                      basic | verified | premium. Set to "basic"
+                                      automatically on publish in MVP.
+
+                                      Owner's free-text notes on availability constraints.
+
+                                      Running count of user-submitted reports. Flags for
+                                      admin review at 3.
+
+13.4 Booking             Type         Description
+                         UUID         Primary key.
+  Field                  FK  Listing  The listed asset being booked.
+  id
+  listing                                               Nwabueze Chigozirim Victor | May 2026 Page 38
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+renter              FK  User     The renter who placed the request.
+owner               FK  User
+                                 The owner of the listing at time of booking
+start_date          Date         (denormalized for performance).
+end_date            Date
+duration_days       Integer      First day of the rental period.
+duration_type       Enum
+                                 Last day of the rental period.
+gross_amount        Decimal
+                                 Calculated: end_date - start_date + 1.
+commission_rate     String
+                                 daily | weekly | monthly -- determines which pricing
+commission_amount   Decimal      tier is applied.
+owner_amount        Decimal
+                                 Total amount the renter is expected to pay. Locked
+status              Enum         at acceptance.
+
+payment_status      Enum         e.g., "12%", "10%", "2,500 flat". Locked at
+renter_note         Text         acceptance.
+decline_reason      Text
+                                 Terminal's fee. Locked at acceptance.
+cancel_reason       Text
+                                 Amount owner is to receive (gross - commission).
+                                 Locked at acceptance.
+
+                                 pending_owner | accepted | declined |
+                                 cancelled_renter | cancelled_owner |
+                                 cancelled_admin | active | completed | disputed
+
+                                 unpaid | paid (simulated in MVP)
+
+                                 Optional note from renter on booking request.
+
+                                 Owner's reason for declining. Required if status =
+                                 declined.
+
+                                 Reason for cancellation (owner or admin). Required
+                                 when cancelling.
+
+13.5 Thread & Message
+
+Field               Type         Description
+                                 Primary key.
+Thread.id           UUID         enquiry | booking
+                                 The listing this thread relates to.
+Thread.thread_type  Enum         Nullable. Set when thread_type = booking.
+                                 Listing owner party.
+Thread.listing      FK  Listing  Renter party.
+                                 Primary key.
+Thread.booking      FK  Booking  The thread this message belongs to.
+                                 Author of the message.
+Thread.owner        FK  User     Message content. Plain text in MVP.
+
+Thread.renter       FK  User                 Nwabueze Chigozirim Victor | May 2026 Page 39
+
+Message.id          UUID
+
+Message.thread      FK  Thread
+
+Message.sender      FK  User
+
+Message.body        Text
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+Message.read_by_recipient Boolean  True when the other party has read it.
+                                   Timestamp of sending. Auto-set.
+Message.sent_at  DateTime
+
+                                   Nwabueze Chigozirim Victor | May 2026 Page 40
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+14. Non-Functional Requirements
+
+14.1 Performance
+
+   · Map search API response time: < 500ms for up to 500 concurrent listings within a radius query
+      (measured at P95)
+
+   · Listing detail page load: < 1.5 seconds on 4G mobile network
+   · Photo upload to Cloudflare R2: < 5 seconds per 5MB image on 4G
+   · Real-time message delivery via Ably: < 300ms latency P95
+   · API endpoint response time for non-geospatial queries: < 200ms P95
+
+14.2 Security
+
+   · All API endpoints served over HTTPS only. HTTP requests redirected.
+   · JWT access tokens expire after 1 hour. Refresh tokens expire after 7 days.
+   · Passwords hashed using bcrypt with minimum cost factor 12 before storage.
+   · Bank account numbers encrypted at rest using AES-256.
+   · KYC documents stored in a private Cloudflare R2 bucket -- accessible only via pre-signed
+
+      URLs with short expiry.
+   · Rate limiting on all authentication endpoints: 5 attempts per 15 minutes per IP.
+   · SQL injection and XSS prevention enforced by Django's ORM and template escaping by
+
+      default.
+   · CORS configured to allow requests only from registered frontend origins.
+
+14.3 Scalability
+
+   · Stateless API design: any new API server instance can handle any request without shared
+      session state.
+
+   · PostGIS spatial indexes on all PointField columns to ensure map queries remain fast at scale.
+   · Cloudflare R2 for media storage -- natively scalable without capacity planning.
+   · Ably for real-time -- manages horizontal scaling of WebSocket connections without platform
+
+      changes.
+
+14.4 Reliability & Availability
+
+   · Target uptime: 99.5% for MVP (allows ~3.6 hours downtime/month)
+   · All unhandled exceptions in production captured by Sentry with immediate alerting.
+   · Database backups: daily automated backups via Supabase with 7-day retention.
+   · Graceful degradation: if Ably is unavailable, messaging falls back to polling REST endpoint --
+
+      messages still delivered, just not instantly.
+
+14.5 Data & Compliance (Nigeria)
+
+                                  Nwabueze Chigozirim Victor | May 2026 Page 41
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+   · Terminal operates under Nigerian Data Protection Regulation (NDPR) requirements.
+   · Users are informed of data collection and processing at registration via a Privacy Policy and
+
+      Terms of Service.
+   · Users can request deletion of their account and personal data. Soft-delete with 30-day recovery
+
+      window, then hard delete.
+   · KYC documents are retained for 5 years per financial regulatory requirements, even after
+
+      account deletion.
+   · Financial records (booking amounts, commission) are retained for 7 years per Nigerian tax law.
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 42
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+15. Full-Scale Vision & Post-MVP Roadmap
+
+The MVP proves the core loop. The full Terminal platform -- reached through disciplined, phased
+delivery -- is a dominant infrastructure layer for Nigeria's and West Africa's heavy asset economy.
+The following outlines what Terminal becomes at scale.
+
+15.1 Phase 2 -- Real Payments (Paystack Integration)
+
+Phase 2 converts Terminal from a facilitation platform into a true financial intermediary. This is the
+single highest-priority post-MVP feature.
+
+   · Paystack checkout integration -- renter pays through Terminal's payment page
+   · Automatic commission deduction at point of payment -- Terminal collects its share instantly
+   · Automatic payout to owner via Paystack Transfer API -- owner receives net amount within 1
+
+      business day
+   · Security deposit hold -- Paystack card pre-authorization held at booking; released on
+
+      completion
+   · Payment status automation -- booking moves to "Active" automatically on payment
+
+      confirmation
+   · Invoice generation -- PDF booking invoices emailed to both parties on payment
+
+15.2 Phase 3 -- Real KYC/KYB & Trust Infrastructure
+
+   · SMS OTP via Termii -- real phone number verification at registration
+   · NIN verification -- Nigeria National Identification Number lookup via NIMC API
+   · BVN verification -- Bank Verification Number lookup for financial identity confirmation
+   · CAC verification for businesses -- Corporate Affairs Commission business registration check
+   · Verification tiers: None  Phone Verified  Identity Verified (NIN/BVN)  Business Verified
+
+      (CAC)
+   · Verified badge displayed on listing cards and owner profiles
+   · Trust Score -- algorithmic score based on verification level, booking completion rate, and
+
+      response time
+
+15.3 Phase 4 -- Reviews, Ratings & Dispute Resolution
+
+   · Post-completion reviews -- both parties can leave a rating (1­5 stars) and written review after a
+      completed booking
+
+   · Owner rating -- displayed on listing pages and owner profile cards
+   · Renter rating -- displayed to owners when evaluating booking requests
+   · Dispute Resolution -- either party can raise a dispute on an active booking with supporting
+
+      evidence (photos, messages)
+   · Admin mediation tools -- admin can issue partial refunds, cancel bookings, or apply penalties
+   · Cancellation policy enforcement -- automated late cancellation penalties (using real payments
+
+      from Phase 2)
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 43
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+15.4 Phase 5 -- Analytics & Intelligence
+
+Owner Analytics
+   · Revenue trends: earnings by month, by asset, by renter type
+   · Listing fill rate: what percentage of available days are booked per listing
+   · Booking conversion rate: how many listing views convert to requests
+   · Top performing listings: revenue rank and view rank across portfolio
+
+Admin Analytics
+   · Platform GMV: total transaction value by day, week, month, and asset class
+   · Supply vs demand balance: listings available vs booking requests per type and city
+   · Geographic heatmap: where listings are concentrated vs where search traffic originates
+   · Conversion funnel: search  listing view  booking request  confirmed booking
+   · User retention: repeat booking rate by cohort
+
+15.5 Phase 6 -- Monetisation & Premium Features
+
+   · Featured Listings -- owners pay a weekly fee to boost their listing to the top of relevant search
+      results
+
+   · Verified Premium badge -- enhanced trust badge for owners who complete all verification levels
+      and maintain high ratings
+
+   · Subscription tier for high-volume owners -- monthly flat fee in exchange for reduced
+      commission rates
+
+   · Listing analytics for owners -- page views, enquiry rate, conversion rate per listing
+
+   · Configurable commission rates -- admin UI to adjust rates globally or per asset class without
+      code changes
+
+15.6 Phase 7 -- Geographic Expansion
+
+   · Pan-Nigeria rollout: expand beyond Lagos/Abuja/Port Harcourt to Kano, Enugu, Ibadan, Warri,
+      Calabar
+
+   · West Africa expansion: Ghana (Accra/Tema), Côte d'Ivoire (Abidjan), Senegal (Dakar),
+      Cameroon (Douala)
+
+   · Multi-currency support: NGN, GHS, XOF, USD
+   · Language localisation: English (Nigeria), French (Francophone Africa)
+   · Country-specific compliance: local data protection and payments regulation for each market
+
+15.7 Full-Scale Feature Matrix
+
+Feature  MVP                    Phase 2                             Phase 3­4 Phase 5+
+
+                                Nwabueze Chigozirim Victor | May 2026 Page 44
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+Map-based asset discovery with                                             
+
+distance
+
+Owner listing management (web)                                             
+
+Booking lifecycle (request  accept                                         
+
+ active)
+
+In-app real-time messaging                                                 
+
+Admin operations panel                                                     
+
+All 5 asset classes                                                        
+
+Commission calculation (stored)                                            
+
+Paystack real payment processing     Sim.                                  
+
+Automatic commission deduction +     Sim.                                  
+
+payout
+
+Security deposit hold & release      Sim.                                  
+
+SMS OTP verification (Termii)        Sim.                                  
+
+NIN / BVN identity verification      --     --                             
+
+CAC business verification (KYB)      --     --                             
+
+Trust Score and verified badge       --     --                             
+
+Post-booking reviews and ratings     --     --                             
+
+Dispute resolution tools             --     --                             
+
+Push notifications (FCM)             Badge  Badge                          
+
+Owner earnings and performance       --     --                      --     
+
+analytics
+
+Platform GMV and admin analytics     Basic  Basic                   Basic  
+
+Geographic heatmap                   --     --                      --     
+
+Featured / boosted listings          --     --                      --     
+
+Configurable commission rates (UI)   --     --                      --     
+
+West Africa multi-country expansion  --     --                      --     
+
+                                            Nwabueze Chigozirim Victor | May 2026 Page 45
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+16. Known Limitations & Risks
+
+16.1 MVP Limitations
+
+   · Commission is calculated but not collected -- Terminal does not earn real revenue until Phase
+      2 (Paystack integration). MVP is a market validation tool, not a revenue-generating product.
+
+   · No fraud prevention beyond manual admin review -- fake listings and fraudulent users can only
+      be caught and removed reactively. Volume will be low enough in MVP that this is manageable.
+
+   · No dispute mechanism -- if a booking goes wrong, the platform has no tools to intervene
+      beyond admin communication. Parties must resolve disputes offline.
+
+   · Phone OTP is simulated -- phone numbers are stored but not verified. This creates an account
+      quality risk. Real OTP is Phase 2.
+
+   · No push notifications -- users must open the app to see new messages and booking updates.
+      Ably real-time works inside the app, but there is no home screen notification.
+
+16.2 Market & Business Risks
+
+   · Supply-side cold start problem -- the map is empty without listings. Launch strategy must
+      prioritise onboarding 20­50 real, quality listings before opening the platform to renters.
+
+   · Off-platform leakage -- once two parties exchange phone numbers (as happens in the in-app
+      chat), they may transact outside Terminal to avoid commission. Mitigation: add value that
+      makes staying on-platform worthwhile (payment security, invoice generation, booking records,
+      reviews).
+
+   · Trust deficit -- renters are committing large sums (100,000­1,000,000+) to an unknown
+      platform and unknown owners. Without real payment protection and KYC, trust is hard to earn.
+      This makes early user quality critical.
+
+   · Price sensitivity -- B2B asset owners are accustomed to direct deals with 0% intermediary fee.
+      Commission rates must demonstrate clear value to both sides.
+
+16.3 Technical Risks
+
+   · PostGIS availability -- the platform's core geospatial features require PostGIS on the database.
+      If the hosting provider does not support it, the entire map layer fails. Supabase has confirmed
+      PostGIS support; this must be verified before first migration.
+
+   · Cloudflare R2 egress and latency -- photo delivery from Nigeria may be slow if R2 does not
+      have edge nodes close to Nigerian users. A CDN layer (Cloudflare itself) mitigates this.
+
+   · Ably free tier limits -- the Ably free tier supports 6M messages per month. At scale, this will be
+      exceeded and paid tiers required. Monitor usage from launch.
+
+                                                                                               Nwabueze Chigozirim Victor | May 2026 Page 46
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+17. Appendix
+
+17.1 Build Wave Summary
+
+Wave         Name                    Deliverables                                 Milestone
+
+Wave 0       Project Setup           Django project skeleton, app structure,      Repo compiles
+Wave 1       Authentication & Users  settings split (dev/prod), requirements,     and runs
+                                     environment config
+                                                                                  User can
+                                     User model, register, login, logout,         register, log in,
+                                     password reset, JWT, role system, KYC        set their role
+                                     document upload, Django Admin for
+                                     users
+
+Wave 2       Listings & Map Search   Listing model (all 5 types), CRUD API,       Owner lists a
+                                     photo upload to R2, PostGIS map search       resource.
+                                     endpoint, distance annotation, filter by     Anyone sees it
+                                     type                                         on the map.
+
+Wave 3       Bookings & Messaging    Booking lifecycle, date conflict detection,  Full core loop:
+                                     commission calculation, Thread +             find  request
+                                     Message models, Ably token endpoint,          confirm 
+                                     real-time delivery                           chat
+
+Wave 4       Polish & Deploy         Bug fixes, API docs (drf-spectacular),       Platform live for
+                                     Sentry, production deployment to             internal beta
+                                     Railway, internal end-to-end test
+
+Wave 5       Owner Web App           Next.js web application: dashboard,          Owner can fully
+                                     inventory, bookings, calendar,               manage their
+                                     messaging, settings -- all owner             portfolio via
+                                     endpoints on backend                         browser
+
+Wave 6       Admin Panel             Django Admin with Unfold: commission         Admin can
+                                     dashboard, KYC queue, listings               operate the
+                                     management, bookings oversight, reports      platform from
+                                     queue                                        day one
+
+17.2 Commission Quick Reference
+
+Asset Class                         Daily          Weekly                         Monthly
+                                                   10%                            8%
+Heavy Equipment (Excavators,        12%
+Cranes, Bulldozers...)                             9%                             7%
+
+Vehicles & Transport (Trucks,       11%            8%                             6%
+Tankers, Trailers...)                              8%                             6%
+                                                   8%                             6%
+Warehouses & Storage                10%            2,500 flat                     2,500 flat
+
+Terminals & Container Yards         10%
+
+Facilities & Staging Areas          10%
+
+Any rental below 25,000 (all        2,500 flat
+classes)
+
+                                                   Nwabueze Chigozirim Victor | May 2026 Page 47
+TERMINAL | Functional Specification Document | v1.0 | Confidential
+
+17.3 Post-MVP Roadmap Timeline (Indicative)
+
+Phase    Target            Key Deliverables
+
+MVP      Launch (Q3 2026)  Map discovery, all 5 asset classes, booking lifecycle, real-
+Phase 2  Q4 2026           time messaging, admin panel, owner web app
+
+                           Paystack payment processing, automatic commission
+                           collection, payout to owners, security deposits, invoice
+                           generation
+
+Phase 3  Q1 2027           SMS OTP (Termii), NIN/BVN verification, CAC business
+                           verification, verified badges, Trust Score
+
+Phase 4  Q2 2027           Post-booking reviews & ratings, dispute resolution tools,
+                           cancellation policies with enforcement
+
+Phase 5  Q3 2027           Owner analytics dashboard, platform GMV analytics,
+                           geographic heatmaps, conversion funnel tracking
+
+Phase 6  Q4 2027           Featured listings, premium subscription tier, configurable
+                           commission rates, advanced search filters
+
+Phase 7  2028+             West Africa geographic expansion (Ghana, Côte d'Ivoire,
+                           Senegal), multi-currency, language localisation
+
+                                -- End of Document --
+
+         Terminal FSD v1.0 | Nwabueze Chigozirim Victor | May 2026 | Confidential
+
+                                             Nwabueze Chigozirim Victor | May 2026 Page 48
+

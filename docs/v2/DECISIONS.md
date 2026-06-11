@@ -1,0 +1,28 @@
+# Terminal v2 — Decision Log
+
+Running log of founder-approved decisions. Each entry is binding on downstream documents (FSD, TSD, design system) unless explicitly superseded here.
+
+| # | Date | Decision | Detail |
+|---|---|---|---|
+| D-001 | 2026-06-11 | **Naming: Supplier / Hirer** | Replaces Owner/Renter platform-wide. "Hire" is the product word for a booking. See `01_Product_Definition.md` §1. |
+| D-002 | 2026-06-11 | **Service fee = Model A: per-class rates + minimum-fee floor** | Keep the FSD per-class/per-duration rate table (Plant & Machinery 12/10/8 · Trucks & Haulage 11/9/7 · Warehousing, Terminals, Land 10/8/6). Replace the flat-fee-below-₦25,000 rule with: `service_fee = max(rate × hire_value, ₦2,500)`. Eliminates both fee cliffs (the ₦24,999→₦25,000 jump and the reverse cliff where the flat fee exceeded low monthly percentages). Display as "Service fee: 12% (min ₦2,500)". |
+| D-003 | 2026-06-11 | **Big-ticket fee taper deferred to Phase 2** | Marginal rate bands / fee cap for high-value hires (anti-leakage economics) to be decided when real payments launch and big-ticket behaviour is observable. Pre-committed as a Phase 2 agenda item, not an open question. |
+| D-004 | 2026-06-11 | **No minimum hire value** | The Policy Bible's ₦25,000 minimum hire value is NOT adopted. The ₦2,500 fee floor keeps small hires profitable; long-tail supply (generators, small storage) stays on-platform. |
+| D-005 | 2026-06-11 | **Split fees and hirer-side fees rejected for MVP** | Hirer pays the listed price only (supplier bears the service fee), consistent with Policy Bible §4.2. Revisit only at Phase 2 alongside real payment protection. |
+
+| D-006 | 2026-06-11 | **MVP payments: collect-only via Paystack** | Real checkout, 4h payment window, webhook-driven On Hire transition, refunds via API. Supplier payouts manual via Ops Console payout queue (weekly). Deposits deferred to Phase 2. "Simulate integrations, never simulate trust" — OTP real (Termii), ID verification real-but-manual. |
+| D-007 | 2026-06-11 | **Launch: both Lagos corridors, class-anchored** | Lekki–Ajah/Mainland anchored by Plant & Machinery + Trucks & Haulage; Apapa–Tin Can anchored by Terminals/Warehousing/Land. Per-corridor supply targets in 03 §8. (Founder chose dual-corridor over single-corridor recommendation.) |
+| D-008 | 2026-06-11 | **Duration pricing: best-price rule** | `hire_value = min(daily×d, weekly×ceil(d/7), monthly×ceil(d/30))` over supplier-set rates; winning scheme sets the service-fee tier. Replaces fixed boundary bands; kills the "8 days = 2 weekly" unfairness. |
+
+| D-009 | 2026-06-11 | **API framework: DRF 3.17** (overrides locked Django Ninja) | Decisive: rest_framework_gis for the map-first core; multi-maintainer ecosystem; agent code accuracy. Stack: Django 6.0.x + DRF + simplejwt + drf-spectacular + rest_framework_gis. |
+| D-010 | 2026-06-11 | **Tasks: Django 6 native Tasks + django-tasks** (overrides locked Celery+Redis) | Postgres as broker; no Redis anywhere in the stack. Celery reconsidered post-MVP only for heavy fan-out. |
+| D-011 | 2026-06-11 | **Realtime: Ably free tier** (overrides locked Pusher) | 200 connections / 6M msgs free; $29 paid cliff vs Pusher's $49 at 100 connections. |
+| D-012 | 2026-06-11 | **Hosting: Railway Hobby (~$10–15/mo)** + Cloudflare Workers for the Supplier Portal (Vercel Hobby forbids commercial use) + R2 media + local-Android/EAS-free-iOS builds | Fits the $25/mo cap with ~$10 headroom. Usage cap to be set on Railway. |
+| D-013 | 2026-06-11 | **Maps: MapLibre GL + OpenFreeMap tiles + LocationIQ geocoding** (pin-drop-first UX) | Decided by ToS, not price: Mapbox free tier forbids storing temporary-geocoding results (our core write path) and Vercel-style traps. Protomaps-on-R2 documented as tile fallback. Stands per 04 §5 unless founder objects. |
+
+| D-014 | 2026-06-11 | **Service fee is supplier-confidential** | Hirers see only the total they pay — no service-fee or payout figures anywhere on hirer surfaces (request preview, hire detail, receipt, emails). Fee breakdown (Hire Value / Service Fee / You Receive) renders on supplier and Ops surfaces only. ToS discloses the fee model in legal terms. Refines D-005. |
+
+## Open items (tracked in task list)
+- Tasks #1 & #2 resolved by Stage 2 (03_MVP_Scope.md §6–§7 and D-006/D-007/D-008).
+- Stage 2 sign-off checklist (`03` §9) — pending founder review.
+- Stage 1 / 1b sign-off checklists (`01` §6, `02` §7) — verbally on track ("good, wonderful"); confirm formally with Stage 2 sign-off.
