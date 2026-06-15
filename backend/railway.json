@@ -1,0 +1,13 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile"
+  },
+  "deploy": {
+    "preDeployCommand": "python manage.py migrate --noinput && python manage.py seed_superuser",
+    "startCommand": "gunicorn wsgi:application --bind 0.0.0.0:$PORT --workers 3",
+    "restartPolicyType": "ON_FAILURE",
+    "healthcheckPath": "/healthz"
+  }
+}

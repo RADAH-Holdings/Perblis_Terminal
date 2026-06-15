@@ -23,12 +23,20 @@ Topology (TSD §1): **api** (gunicorn, 512 MB) · **worker** (django-tasks, 256 
 1. Create a project; add the **PostGIS** plugin (Railway template `postgis-17`).
    It exposes `DATABASE_URL` — rewrite the scheme to `postgis://` for the GIS
    backend (set it explicitly in the service vars below).
-2. Create the **api** service from this repo, root `backend/` (Dockerfile build).
-   - Start command: `gunicorn wsgi:application --bind 0.0.0.0:$PORT --workers 3`
-   - Release command: `python manage.py migrate --noinput` (Procfile `release`).
-   - Health check path: `/healthz`.
-3. Create the **worker** service from the same image.
-   - Start command: `python manage.py db_worker`.
+2. Create the **api** service from this repo.
+   - **Set Root Directory = `backend`** (Settings → Source). This is critical:
+     it makes Railway build `backend/Dockerfile` (Python) instead of the repo
+     root, which is a pnpm/Node workspace. Building from the root yields a Node
+     image with no `python`, and the container dies at start with
+     `/bin/bash: line 1: python: command not found`.
+   - With the root set, `backend/railway.json` pins the **Dockerfile** builder,
+     the start command (`gunicorn`), the pre-deploy command
+     (`migrate` + `seed_superuser`), and the `/healthz` health check — so the
+     api service needs no further build config.
+3. Create the **worker** service: same repo, **Root Directory = `backend`**,
+   builder = Dockerfile, and override the **start command** to
+   `python manage.py db_worker`. (It inherits the idempotent pre-deploy from
+   `railway.json` — harmless to run twice.)
 4. Set service variables on **both** api and worker (values are yours):
 
    ```
@@ -78,7 +86,9 @@ pnpm --filter @terminal/portal deploy   # opennextjs-cloudflare build && deploy
 ## 4. Continuous deploy
 
 Merge to `main` triggers:
-- **Railway**: auto-deploy of api + worker; the `release` phase runs `migrate`.
+- **Railway**: auto-deploy of api + worker; the pre-deploy command in
+  `backend/railway.json` runs `migrate` (+ `seed_superuser`) before the new
+  release goes live.
 - **Portal**: add a GitHub Action step (or `wrangler deploy`) on `main` for
   `portal/**`. (CI for PRs is `.github/workflows/portal.yml`.)
 
@@ -89,3 +99,16 @@ Merge to `main` triggers:
 - [ ] `accounts` migration `0001` applied in prod
 - [ ] No secrets in git history
 - [ ] Projected fixed spend ≤ $25/mo (≈ $10–15 target)
+
+## Troubleshooting
+
+- **`/bin/bash: line 1: python: command not found` at container start** — the
+  service built the repo root (a pnpm/Node workspace) instead of the backend.
+  Set the service **Root Directory = `backend`** so `backend/Dockerfile` and
+  `backend/railway.json` are used. Applies to both the api and worker services.
+- **`relation "users" does not exist` / app errors on first hit** — the
+  pre-deploy migrate didn't run. Confirm `railway.json` is at the service root
+  (i.e. Root Directory = `backend`) or set the pre-deploy command manually.
+- **DB connection/SSL errors** — ensure `DATABASE_URL` uses the `postgis://`
+  scheme (not `postgresql://`) so GeoDjango loads, and points at the Railway
+  PostGIS plugin (session port), not a transaction pooler.
