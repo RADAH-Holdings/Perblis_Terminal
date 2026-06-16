@@ -8,12 +8,12 @@ the session-start protocol that drives this file live in `CLAUDE.md`.
 
 ## Current status — _keep this section current_
 
-**Wave:** Wave 0 built + deployed. **Wave 1 (accounts/auth/verification) MERGED to `main`** (PR #7, 2026-06-16) — auto-deploys backend. TSD §3.3/§3.8 reconciled to match (PR pending).
+**Wave:** Wave 0 built + deployed. **Wave 1 (accounts/auth/verification) MERGED to `main`** (PRs #7 feature, #8 TSD reconcile, #9 bcrypt dep fix, #10 OTP email fallback) — auto-deploys backend. Local suite green (81 tests).
 
-- **Built:** backend `core`; `accounts` now full Wave 1 — register + Termii OTP, JWT login/refresh/logout, password reset, me/roles, verification + Ops admin queue, soft-delete + purge. `packages/tokens`; `portal` hello-world; CI green on `main`.
+- **Built:** backend `core`; `accounts` full Wave 1 — register + OTP (Termii SMS, email fallback when unconfigured), JWT login/refresh/logout, password reset, me/roles, verification + Ops admin queue, soft-delete + purge. `packages/tokens`; `portal` hello-world; CI green on `main`.
 - **Not built:** domain apps `suppliers listings search hires payments messaging ops` still empty (Waves 2+).
 - **Deploy:** Railway api + worker + PostGIS live — `/healthz` + `/readyz` green. **Portal on Cloudflare Workers: PENDING**.
-- **Integrations:** Termii/Resend/R2 client code shipped with dev fallbacks (console OTP / Mailpit / local-disk). Live keys still to be set in Railway env for the prod demo.
+- **Integrations:** R2 + Resend verified working with founder keys. OTP: Termii SMS when `TERMII_API_KEY` set, else console + email fallback (prod must keep Termii set or phone-channel proof degrades to email). `DEFAULT_FROM_EMAIL` = contact@perblis.com (Resend-verified).
 - **Decisions since specs:** D-017 = MVP payment provider **Bachs.io** (collect-only), supersedes Paystack in D-006; integration lands in Wave 4.
 
 **Next:**
@@ -113,3 +113,11 @@ ailway setup agent -y from project root. Installed use-railway skill to Universa
 - reason: User received welcome email but no OTP code — SMS-only delivery with no Termii key.
 - change_ref: 2026-06-16 07:30 - Wave 1: accounts identity, auth, verification
 - notes: Production still uses Termii SMS when `TERMII_API_KEY` is set; email is fallback only. R2 + Resend verified working with founder keys. PR: cursor/otp-email-fallback-5d9a.
+
+## 2026-06-16 12:30 - Review merged Cursor PRs (#9 bcrypt, #10 OTP email) + TSD note
+- tag: CHORE
+- area: docs/v2/07_TSD.md (§3.8 build notes), Implementations.md
+- summary: Reviewed two merged Cursor PRs against main. #9 (add bcrypt dep) — correct, necessary: BCryptSHA256PasswordHasher needs bcrypt at runtime; tests masked it via MD5. #10 (email OTP when Termii absent) — sound, tested, OpenAPI unchanged (internal task signature only). Validated main: 81 tests green, schema unchanged. Updated the TSD §3.8 build-notes callout to document the OTP email fallback + the prod caution (must keep TERMII_API_KEY set or phone-channel verification silently degrades to email) and bcrypt as a runtime dep.
+- reason: Founder asked to review the externally-merged changes and update affected docs.
+- change_ref: 2026-06-16 10:50 - TSD reconciliation for Wave 1 deltas
+- notes: No code change. OpenAPI not regenerated (no contract drift). Possible future hardening: warn/refuse in prod when TERMII_API_KEY is unset rather than silently emailing OTPs — flagged to founder.
