@@ -7,8 +7,10 @@ the versioned root resolves.
 
 from __future__ import annotations
 
-from django.urls import path
+from django.urls import include, path
 
 app_name = "api"
 
-urlpatterns: list[path] = []
+urlpatterns = [
+    path("", include("accounts.urls")),
+]
