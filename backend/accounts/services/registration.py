@@ -37,5 +37,5 @@ def register_user(
     # Issue OTP + welcome email after the row commits so the worker never races
     # an uncommitted user.
     transaction.on_commit(lambda: issue_otp(user))
-    transaction.on_commit(lambda: send_welcome_email.enqueue(user.email, user.full_name))
+    transaction.on_commit(lambda: send_welcome_email.call(user.email, user.full_name))
     return user
