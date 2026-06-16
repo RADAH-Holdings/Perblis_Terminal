@@ -33,6 +33,14 @@ ailway setup agent -y from project root. Installed use-railway skill to Universa
 - tag: CHORE
 - area: Railway resplendent-gentleness; Perblis_Terminal + Worker + PostGIS; backend/railway.json, railway.worker.json, Dockerfile, Procfile, settings/prod.py
 - summary: Verified PostGIS connected to web and worker via `DATABASE_URL` (`postgis://` + `postgis.railway.internal:5432`) on both services per DEPLOY.md. Production probes pass (`/healthz`, `/readyz` database ok; worker `db_worker` running). Restored web `startCommand`/`healthcheckPath` in `railway.json`; added `railway.worker.json` for worker-only start. Redeployed web from local fixes after env-var change triggered failed main-branch deploy (`$PORT` literal).
-- reason: User requested Railway deployment follow-up ó DB wiring verification, endpoint tests, wave-zero check, and PR for durable git deploy.
+- reason: User requested Railway deployment follow-up ù DB wiring verification, endpoint tests, wave-zero check, and PR for durable git deploy.
 - change_ref: 2026-06-16 01:10 (local) - Railway deploy fix (resplendent-gentleness)
 - notes: Portal Cloudflare Workers deploy still pending (wave-0 exit partial). Worker `railway.worker.json` config path should be set in Railway dashboard when git auto-deploy lands. R2/Bachs integrations `not_configured` in readyz (expected).
+
+## 2026-06-16 04:45 (local) - Git branch push for Railway deploy PR
+- tag: CHORE
+- area: git branch deploy/railway-wave0-followup; .gitignore
+- summary: Pushed deploy fixes to `origin/deploy/railway-wave0-followup` (commits 0150715, 4a12ba3, 127386d). Removed tracked `.cursor/settings.json`; added `.cursor/` to `.gitignore`. Production redeployed SUCCESS from repo root for web + worker.
+- reason: Durable git-based auto-deploy on merge to main; PR workflow per user request.
+- change_ref: 2026-06-16 04:20 (local) - Railway PostGIS wiring and deploy follow-up
+- notes: `gh` installed but not authenticated ó user must `gh auth login` then create PR, or open compare URL manually.
