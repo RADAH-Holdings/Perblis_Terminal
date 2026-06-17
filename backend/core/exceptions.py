@@ -37,11 +37,19 @@ class TerminalError(APIException):
 
     Subclasses set `default_code`/`status_code`/`default_detail`, e.g.
     availability_conflict, verification_required, payment_window_expired.
+
+    `fields` optionally carries per-field detail (e.g. which spec fields failed
+    validation or are still missing for publish) — rendered under the envelope's
+    `fields` key alongside the stable `code`.
     """
 
     status_code = status.HTTP_400_BAD_REQUEST
     default_detail = "Request could not be processed."
     default_code = "error"
+
+    def __init__(self, detail=None, code=None, fields: dict | None = None):
+        super().__init__(detail, code)
+        self.fields = fields
 
 
 def _envelope(code: str, message: str, fields: dict | None = None) -> dict:
@@ -74,5 +82,6 @@ def terminal_exception_handler(exc, context):
     code = getattr(exc, "default_code", None) or default_code
     detail = response.data.get("detail") if isinstance(response.data, dict) else None
     message = str(detail) if detail else str(response.data)
-    response.data = _envelope(code, message)
+    fields = getattr(exc, "fields", None)
+    response.data = _envelope(code, message, fields)
     return response

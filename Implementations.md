@@ -8,18 +8,19 @@ the session-start protocol that drives this file live in `CLAUDE.md`.
 
 ## Current status — _keep this section current_
 
-**Wave:** Wave 0 built + deployed. **Wave 1 (accounts/auth/verification) COMPLETE — all merged to `main`** (PRs #7–#13). **Wave 2 (Supply: supplier profiles, yards, spec templates, listings CRUD + publish) is the founder-approved next wave — starting now in a fresh instance.** Local suite green (91 tests, 92.85% cov).
+**Wave:** Wave 0 + Wave 1 COMPLETE (merged to `main`). **Wave 2 (Supply) is BUILT on branch `claude/kind-maxwell-6fpbb0` (draft PR #15) — all 6 slices done; awaiting CI/review/merge + founder demo + approval before Wave 3.** Local suite green (156 tests, ~91% cov).
 
-- **Built:** backend `core`; `accounts` = full Wave 1 — register + **independent two-channel verification** (phone via SMS / email via Resend, both required for login), JWT login/refresh/logout (rotating + blacklist + `tv` session-invalidation), no-enumeration password reset, `GET/PATCH/DELETE me`, activate-supplier, verification docs (private R2) + Ops admin review queue, soft-delete + NDPR purge. Migrations `0001`–`0005`. Frozen OpenAPI `backend/openapi/schema.yml`. `packages/tokens`; `portal` hello-world; CI green on `main`.
-- **Not built:** domain apps `suppliers listings search hires payments messaging ops` still empty — Wave 2 fills `suppliers`/`listings` first.
+- **Built:** backend `core` + full Wave 1 `accounts`. **Wave 2 `suppliers` + `listings`:** supplier profile (Fernet-encrypted bank #), yards (PostGIS pins, delete-guard, 100m inference), 36 spec templates (doc 05 seed + idempotent command/migration), listings CRUD (6-step create, spec validation + version stamp, location precedence), publish gates via `listings/state.py` (the only status writer), photos (≤10, cover, reorder), duplicate, reports (5/day, 3-in-30 priority flag), storefronts (public; suspended→404), cross-cutting media presign pipeline (`core/media`). Migrations: accounts 0001–0005, suppliers 0001–0002, listings 0001–0005. Frozen OpenAPI `backend/openapi/schema.yml`.
+- **Not built:** domain apps `search hires payments messaging ops` still empty (Waves 3+).
 - **Deploy:** Railway api + worker + PostGIS live — `/healthz` + `/readyz` green. Prod **must** keep `TERMII_API_KEY` set (phone OTP fails loudly, no silent fallback). **Portal on Cloudflare Workers: PENDING** (Wave 0 portal exit still open).
 - **Integrations:** R2 + Resend verified working with founder keys. OTP inline (no worker): phone code SMS-only (loud `otp_delivery_failed` on prod failure; console in dev), email code email-only. `DEFAULT_FROM_EMAIL` = contact@perblis.com.
 - **Decisions since specs:** D-017 = MVP payment provider **Bachs.io** (collect-only), supersedes Paystack in D-006; integration lands in Wave 4.
 
-**Next (Wave 2 — read `docs/waves/wave-2.md` first):**
-1. **Wave 2** is approved — supplier profiles, yards, spec templates, listings CRUD + publish (wave-2.md / FSD §5–6 / TSD). **Wave 1's auth contract is frozen — consume it, don't break it.** Note the publish gate uses the verified account levels Wave 1 established.
-2. Known minor follow-up (non-blocking): `accounts/integrations/email.py::send_otp_email` copy still reads "verify your phone" / "fallback" — should read "verify your email" (it's now the dedicated email-channel sender). One-line copy fix.
-3. Still open from Wave 0: deploy the Supplier Portal to Cloudflare Workers.
+**Next (Wave 2 close-out, then Wave 3 once founder-approved):**
+1. Merge PR #15 (CI green locally). **Wave-end checklist:** run `manage.py seed_spec_templates` in prod (~36 templates; also applied by migration), demonstrate the founder exit criterion via the prod API, record founder approval before Wave 3 (Search/Map).
+2. DEFERRED in Wave 2 (founder call): "Other (describe)" asset type → Ops review NOT built (unknown types rejected with `invalid_asset_type`; Ops surfaces are Wave 6). Photo orphan-sweep task is a logged no-op until an upload ledger / R2 lifecycle policy lands.
+3. Known minor follow-up (non-blocking): `accounts/integrations/email.py::send_otp_email` copy still reads "verify your phone" / "fallback" — should read "verify your email". One-line copy fix.
+4. Still open from Wave 0: deploy the Supplier Portal to Cloudflare Workers.
 
 **Live:** https://perblisterminal-production.up.railway.app/healthz
 
@@ -138,6 +139,14 @@ ailway setup agent -y from project root. Installed use-railway skill to Universa
 - change_ref: 2026-06-16 13:20 - Two-channel verification (separate email + phone OTP)
 - notes: Next instance: read Implementations.md → design.md → docs/waves/wave-2.md → FSD/TSD §5–6. Wave 1 auth contract is frozen (breaking it needs founder sign-off). Known non-blocking nit recorded: send_otp_email copy says "phone" instead of "email". Local DB for tests needs PostGIS + DATABASE_URL=postgis://postgres:postgres@localhost:5432/terminal (env injects a remote Supabase URL that can't build a test DB).
 
+## 2026-06-17 - Wave 2 Slice 0: media presign pipeline + supplier profile
+- tag: FEATURE
+- area: backend/core (media.py, fields.py, encryption.py, views.py, serializers.py, urls.py, tests/test_media.py), backend/suppliers (models, services/profile, serializers, views, urls, admin, factories, migrations/0001, tests), backend/conftest.py, settings/base.py, backend/openapi/schema.yml
+- summary: First Wave 2 slice. Added the cross-cutting media pipeline `POST /api/v1/media/presign` (kind-scoped presigned PUT: listing_photo/avatar/logo/verification_doc/handover_photo with per-kind content-type + size caps per TSD §3.9; public vs private bucket; stable codes media_kind_invalid/media_content_type_invalid/media_too_large) in `core/media.py`, plus dev/CI local upload+serve receivers (excluded from schema) so the round-trip works without R2. Added `core.encryption` (Fernet, FIELD_ENCRYPTION_KEY with SECRET_KEY-derived dev fallback) + `core.fields.EncryptedTextField`. Built `suppliers.SupplierProfile` (business name, description, logo_key, bank_name, bank_account_number_enc **encrypted at rest**, bank_account_name, 4 notif bools, strike_count) with `GET/PATCH /api/v1/suppliers/me/profile` (IsSupplier; bank number write-only in / masked `****1234` out; is_complete gate helper for publish). Added shared root `conftest.py` (api/auth/supplier/hirer fixtures).
+- reason: Wave 2 §2.1 + §2.5 — supplier business profile with encrypted bank details and the media pipeline every later slice (logos, listing photos) consumes.
+- change_ref: 2026-06-16 14:00 - Wave 1 close-out + Wave 2 handoff doc sync
+- notes: Green locally — 107 tests / 91.67% cov, ruff+format+mypy clean, makemigrations --check clean, OpenAPI regenerated (0 errors). Pinned ENUM_NAME_OVERRIDES so the new media `kind` enum (MediaKindEnum) does NOT rename the frozen Wave-1 verification `KindEnum` — verified no `kind` drift vs main. Local test/dev DB needs PostGIS + `DATABASE_URL=postgis://postgres:postgres@localhost:5432/terminal` and `DJANGO_SETTINGS_MODULE=settings.test` (env injects a remote Supabase URL + config.settings.production that must be overridden). Next: Slice 1 — Yards.
+
 ## 2026-06-17 - Add "prepare for handoff" protocol to CLAUDE.md
 - tag: CHORE
 - area: CLAUDE.md (new "Handoff protocol" section)
@@ -145,3 +154,43 @@ ailway setup agent -y from project root. Installed use-railway skill to Universa
 - reason: Founder wants the handoff doc-sync routine codified so any instance runs it on command.
 - change_ref: 2026-06-16 14:00 - Wave 1 close-out + Wave 2 handoff doc sync
 - notes: Added to PR #14 (docs/wave2-handoff). Documentation convention only.
+
+## 2026-06-17 - Wave 2 Slice 1: Yards
+- tag: FEATURE
+- area: backend/suppliers (models.Yard, errors.YardHasListings, services/yards.py, serializers.YardSerializer, views Yard*View, urls, admin, factories.YardFactory, migrations/0002, tests/test_yards.py), backend/conftest.py (supplier2 fixture), .github/workflows/backend.yml (mypy now covers suppliers), backend/openapi/schema.yml
+- summary: Added Yards (FSD §5.1): `GET/POST /api/v1/yards`, `PATCH/DELETE /api/v1/yards/:id` (IsSupplier, owner-scoped). `Yard` has a `geography(Point,4326)` GIST `point`; GeoJSON in/out via rest_framework_gis GeometryField. Delete is guarded by the listing→yard FK being PROTECT (added in the listings slice) — `yard.delete()` ProtectedError surfaces as stable `yard_has_listings`. Added `nearest_yard_within` (100m auto-yard inference helper for the listing form, FSD §5.1). Extended the CI mypy step to include `suppliers`.
+- reason: Wave 2 §2.2 — supplier yards with map pins; listings attach to them next.
+- change_ref: 2026-06-17 - Wave 2 Slice 0: media presign pipeline + supplier profile
+- notes: Green locally — 114 tests / 91.53% cov, ruff+format+mypy clean, makemigrations clean, OpenAPI regenerated (yards paths added, no frozen-enum drift). Tests obtain introspected Yards via the service (typed return) not factory locals, to stay mypy-clean (factory_boy returns aren't typed for mypy). yard_has_listings block-path test lands with the listings slice (no Listing model yet). Next: Slice 2 — spec templates + seed.
+
+## 2026-06-17 - Wave 2 Slice 2: spec templates + seed
+- tag: FEATURE
+- area: backend/listings (enums.AssetClass/SpecFieldKind, models.SpecTemplate, spec_data.py, services/{spec_seed,specs}, errors, serializers, views.SpecTemplateView, urls, admin, factories, management/commands/seed_spec_templates, migrations 0001+0002 data-seed, tests), backend/core/exceptions.py (TerminalError carries optional fields), core/urls.py (include listings), .github/workflows/backend.yml (mypy +listings), backend/openapi/schema.yml
+- summary: Wave 2 §2.3. Added `SpecTemplate` (asset_class+asset_type+version uniq, fields jsonb) seeded from doc 05 §2–§6 via `spec_data.build_templates()` (36 templates: 15 plant / 9 trucks / 5 warehousing / 3 terminals / 4 land) — one ★ filterable headline per class (operating_weight·payload_capacity·floor_area·container_capacity·area). Idempotent `seed_spec_templates()` (upsert) used by both the management command and a data migration (0002). `GET /api/v1/spec-templates?class=&type=&version=` (public). `validate_specs(...)` checks field kinds/options always and required-fields when `require=True` (publish); `missing_required_specs` is the publish-gate helper; drops unknown fields; `invalid_asset_type`/`spec_invalid` codes. Enhanced `core.exceptions.TerminalError` to carry optional per-field `fields` (additive, backward-compatible) so custom-code errors surface field detail.
+- reason: Wave 2 §2.3 — the spec registry listings validate against; publish gate needs required-spec checks.
+- change_ref: 2026-06-17 - Wave 2 Slice 1: Yards
+- notes: Green locally — 123 tests / 90.80% cov, ruff+format+mypy clean, makemigrations clean, OpenAPI regenerated (no frozen-enum drift). Run `manage.py seed_spec_templates` in prod (also applied by migration 0002). Next: Slice 3 — listings core (CRUD), which adds the listing→yard PROTECT FK that activates the yard delete-guard.
+
+## 2026-06-17 - Wave 2 Slice 3: Listings core (CRUD)
+- tag: FEATURE
+- area: backend/listings (enums Listing{Status,Tier}/ReportReason, models.Listing+Unit, errors.ListingNotEditable, services/{listings,geocoding}, serializers Listing*, views Listing*View, urls, admin, factories.ListingFactory, migration 0003, tests/test_listings.py), backend/openapi/schema.yml
+- summary: Wave 2 §2.4. `Listing` (+`Unit`) per TSD §3.3 — kobo pricing (daily required), specs validated + version stamped on create, location precedence yard→pin→geocode with denormalised `point`, stored `completeness_score` (not serialized). `GET/POST /api/v1/listings` (IsSupplier, mine), `GET /listings/:id` (public iff Live else owner-only 404), `PATCH /listings/:id` (Draft/Paused/Live editable; archived/removed → `listing_not_editable`). Yard FK is PROTECT → the yard delete-guard (`yard_has_listings`) is now live and tested. Auto-yard 100m suggestion returned on create. GIN index on specs; status+asset_class / supplier+status indexes. LocationIQ geocoding helper (graceful degrade without key). D-014: no fee fields on listings.
+- reason: Wave 2 §2.4 — real listings can now be authored; publish/photos/state come next.
+- change_ref: 2026-06-17 - Wave 2 Slice 2: spec templates + seed
+- notes: Green locally — 135 tests / 89.92% cov, ruff+format+mypy clean, makemigrations clean, OpenAPI regenerated (listings paths added, no frozen-enum drift). status is never written in the service (state machine = Slice 4). DEFERRED: "Other (describe)" asset type → Ops review not implemented (unknown types rejected with invalid_asset_type; Ops surfaces are Wave 6) — flag for founder. Live-edit hire-term lock is a no-op until Wave 4 (asserted no cascade). Next: Slice 4 — photos + state machine (publish gates, pause/archive/duplicate).
+
+## 2026-06-17 - Wave 2 Slice 4: photos + state machine (publish gates, duplicate)
+- tag: FEATURE
+- area: backend/listings (models.ListingPhoto, state.py, services/{photos,listings(transition+duplicate)}, errors publish-gate+photo, serializers photo/reorder/duplicate, views photo/action/duplicate, urls, factories.ListingPhotoFactory, tasks.sweep_orphan_photos, migration 0004, tests/test_publish.py), backend/openapi/schema.yml
+- summary: Wave 2 §2.4/§2.5. `listings/state.py::apply` is the single status writer (Draft→Live⇄Paused→Archived; removed Ops-only). Publish gates (FSD §5.2), each a stable code: publish_requires_daily_price/_photo/_location/_specs (per-field), verification_required, business_profile_incomplete; tier auto-Basic at publish. `POST /listings/:id/{publish,pause,archive,duplicate}`. ListingPhoto (≤10 enforced, first photo auto-cover, reorder + single cover) via `POST /listings/:id/photos` + `PATCH /listings/:id/photos/order` (keys come from media/presign). Duplicate → new Draft copying class/type/specs/pricing/units/yard, tier resets Basic, optional photo-key copy (no re-upload). Weekly orphan-sweep task stub.
+- reason: Wave 2 §2.4/§2.5 — listings can now go Live through enforced gates; fleet duplicate + photos complete the supply build.
+- change_ref: 2026-06-17 - Wave 2 Slice 3: Listings core (CRUD)
+- notes: Green locally — 147 tests / 91.25% cov, ruff+format+mypy clean, makemigrations clean, OpenAPI regenerated (listing action+photo paths, no frozen-enum drift). Publish-gate matrix fully tested (each missing precondition → its code). Orphan sweep is a logged no-op until an upload ledger / R2 lifecycle policy lands (flagged). Next: Slice 5 — reports + storefronts (closes the wave).
+
+## 2026-06-17 - Wave 2 Slice 5: reports + storefronts (wave build complete)
+- tag: FEATURE
+- area: backend/listings (enums.ReportState, models.Report, services/{reports,storefront}, errors.ListingNotReportable, serializers Report*, views ListingReportView/StorefrontView, urls, admin.ReportAdmin, factories.ReportFactory, migration 0005, tests/test_reports_storefront.py), listings/services/listings.py (hide suspended-supplier listings)
+- summary: Wave 2 §2.6 — closes the wave. `POST /api/v1/listings/:id/reports` (IsHirer, throttle 5/day/user, only Live listings → else 404); never auto-hides; **3 reports in 30 days sets `priority_review_flag`** (freezegun-tested, window-correct). Ops `ReportAdmin` shows the supplier's sibling listings. `GET /api/v1/storefronts/:supplier_id` (public): business name, logo, verification badge, member-since, about, yards (mini-map data + live count), Live listings (cover photo, ₦ display) — no hire CTA, no fee fields (D-014). Suspended/deleted supplier → storefront 404 AND listing-detail 404 (hidden together, FSD §5.3).
+- reason: Wave 2 §2.6 — abuse reporting + the public supplier page; completes the Supply wave.
+- change_ref: 2026-06-17 - Wave 2 Slice 4: photos + state machine
+- notes: Green locally — 156 tests / 91.14% cov, ruff+format+mypy clean, makemigrations clean, OpenAPI regenerated (reports + storefronts paths, no frozen-enum drift). Lexicon-clean (no owner/renter/booking). All 6 Wave 2 slices on PR #15. Wave-end checklist remaining: prod seed, founder demo, founder approval before Wave 3.
