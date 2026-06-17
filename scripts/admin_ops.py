@@ -82,14 +82,12 @@ class AdminClient:
         for m in re.finditer(r'<input[^>]*type="checkbox"[^>]*name="([^"]+)"[^>]*checked', html):
             fields[m.group(1)] = "on"
 
-        # Datetime fields: 0_date + 0_time suffixes
+        # Datetime fields: _0 = date, _1 = time (Django admin SplitDateTimeWidget)
         for m in re.finditer(
-            r'name="(phone_verified_at|email_verified_at)_0_([^"]+)"[^>]*value="([^"]*)"',
+            r'name="((?:phone_verified_at|email_verified_at)_[01])"[^>]*value="([^"]*)"',
             html,
         ):
-            prefix = m.group(1)
-            part = m.group(2)
-            fields[f"{prefix}_0_{part}"] = m.group(3)
+            fields[m.group(1)] = m.group(2)
 
         return csrf, fields
 
@@ -105,15 +103,15 @@ class AdminClient:
 
 
 def django_admin_datetime(dt: datetime) -> dict[str, str]:
-    """Split a datetime into Django admin's _0_date / _0_time field names."""
+    """Split a datetime into Django admin's _0 (date) / _1 (time) field names."""
     local = dt.astimezone(timezone.utc)
     date = local.strftime("%Y-%m-%d")
     time = local.strftime("%H:%M:%S")
     return {
-        "phone_verified_at_0_date": date,
-        "phone_verified_at_0_time": time,
-        "email_verified_at_0_date": date,
-        "email_verified_at_0_time": time,
+        "phone_verified_at_0": date,
+        "phone_verified_at_1": time,
+        "email_verified_at_0": date,
+        "email_verified_at_1": time,
     }
 
 
