@@ -5,8 +5,9 @@ from __future__ import annotations
 import factory
 from django.contrib.gis.geos import Point
 
-from listings.enums import AssetClass, ListingStatus
-from listings.models import Listing, ListingPhoto, SpecTemplate
+from accounts.factories import UserFactory
+from listings.enums import AssetClass, ListingStatus, ReportReason
+from listings.models import Listing, ListingPhoto, Report, SpecTemplate
 from suppliers.factories import SupplierUserFactory
 
 
@@ -51,3 +52,12 @@ class ListingPhotoFactory(factory.django.DjangoModelFactory):
 
     listing = factory.SubFactory(ListingFactory)
     r2_key = factory.Sequence(lambda n: f"listings/photo-{n}.jpg")
+
+
+class ReportFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Report
+
+    listing = factory.SubFactory(ListingFactory)
+    reporter = factory.SubFactory(UserFactory)
+    reason = ReportReason.INACCURATE

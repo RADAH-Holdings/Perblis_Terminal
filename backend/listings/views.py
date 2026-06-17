@@ -8,11 +8,13 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from core.permissions import IsSupplier
+from core.permissions import IsHirer, IsSupplier
 from listings import serializers as s
 from listings.services import listings as listings_service
 from listings.services import photos as photos_service
+from listings.services import reports as reports_service
 from listings.services import specs as specs_service
+from listings.services import storefront as storefront_service
 
 
 class SpecTemplateView(GenericAPIView):
@@ -155,3 +157,28 @@ class ListingDuplicateView(GenericAPIView):
             user=request.user, listing_id=listing_id, copy_photos=data.validated_data["copy_photos"]
         )
         return Response(s.ListingSerializer(listing).data, status=status.HTTP_201_CREATED)
+
+
+class ListingReportView(GenericAPIView):
+    permission_classes = [IsAuthenticated, IsHirer]
+    serializer_class = s.ReportCreateSerializer
+    throttle_scope = "report"  # 5/day/user (settings DEFAULT_THROTTLE_RATES)
+
+    @extend_schema(responses={201: s.ReportSerializer})
+    def post(self, request, listing_id):
+        data = self.get_serializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        report = reports_service.create_report(
+            user=request.user, listing_id=listing_id, **data.validated_data
+        )
+        return Response(s.ReportSerializer(report).data, status=status.HTTP_201_CREATED)
+
+
+class StorefrontView(GenericAPIView):
+    """Public supplier company page (no auth, no hire CTA, no fee fields)."""
+
+    permission_classes = [AllowAny]
+
+    @extend_schema(responses={200: None})
+    def get(self, request, supplier_id):
+        return Response(storefront_service.get_storefront(supplier_id=supplier_id))

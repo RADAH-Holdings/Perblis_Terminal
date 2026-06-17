@@ -62,11 +62,19 @@ def list_listings(user: User) -> QuerySet[Listing]:
 
 
 def get_listing_for_view(*, listing_id, user) -> Listing:
-    """A Live listing is public; anything else is visible only to its supplier."""
-    listing = get_object_or_404(Listing, id=listing_id)
-    if listing.status != ListingStatus.LIVE and not (
-        user and user.is_authenticated and listing.supplier_id == user.id
-    ):
+    """A Live listing is public; anything else is visible only to its supplier.
+
+    A suspended/deleted supplier's listings are hidden from everyone but the
+    listing's own supplier (FSD §5.3 — hidden together with the storefront).
+    """
+    listing = get_object_or_404(Listing.objects.select_related("supplier"), id=listing_id)
+    by_supplier = bool(user and user.is_authenticated and listing.supplier_id == user.id)
+    hidden = (
+        listing.status != ListingStatus.LIVE
+        or listing.supplier.is_suspended
+        or listing.supplier.is_deleted
+    )
+    if hidden and not by_supplier:
         raise Http404()
     return listing
 

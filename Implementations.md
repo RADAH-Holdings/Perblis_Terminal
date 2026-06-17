@@ -8,18 +8,19 @@ the session-start protocol that drives this file live in `CLAUDE.md`.
 
 ## Current status — _keep this section current_
 
-**Wave:** Wave 0 built + deployed. **Wave 1 (accounts/auth/verification) COMPLETE — all merged to `main`** (PRs #7–#13). **Wave 2 (Supply: supplier profiles, yards, spec templates, listings CRUD + publish) is the founder-approved next wave — starting now in a fresh instance.** Local suite green (91 tests, 92.85% cov).
+**Wave:** Wave 0 + Wave 1 COMPLETE (merged to `main`). **Wave 2 (Supply) is BUILT on branch `claude/kind-maxwell-6fpbb0` (draft PR #15) — all 6 slices done; awaiting CI/review/merge + founder demo + approval before Wave 3.** Local suite green (156 tests, ~91% cov).
 
-- **Built:** backend `core`; `accounts` = full Wave 1 — register + **independent two-channel verification** (phone via SMS / email via Resend, both required for login), JWT login/refresh/logout (rotating + blacklist + `tv` session-invalidation), no-enumeration password reset, `GET/PATCH/DELETE me`, activate-supplier, verification docs (private R2) + Ops admin review queue, soft-delete + NDPR purge. Migrations `0001`–`0005`. Frozen OpenAPI `backend/openapi/schema.yml`. `packages/tokens`; `portal` hello-world; CI green on `main`.
-- **Not built:** domain apps `suppliers listings search hires payments messaging ops` still empty — Wave 2 fills `suppliers`/`listings` first.
+- **Built:** backend `core` + full Wave 1 `accounts`. **Wave 2 `suppliers` + `listings`:** supplier profile (Fernet-encrypted bank #), yards (PostGIS pins, delete-guard, 100m inference), 36 spec templates (doc 05 seed + idempotent command/migration), listings CRUD (6-step create, spec validation + version stamp, location precedence), publish gates via `listings/state.py` (the only status writer), photos (≤10, cover, reorder), duplicate, reports (5/day, 3-in-30 priority flag), storefronts (public; suspended→404), cross-cutting media presign pipeline (`core/media`). Migrations: accounts 0001–0005, suppliers 0001–0002, listings 0001–0005. Frozen OpenAPI `backend/openapi/schema.yml`.
+- **Not built:** domain apps `search hires payments messaging ops` still empty (Waves 3+).
 - **Deploy:** Railway api + worker + PostGIS live — `/healthz` + `/readyz` green. Prod **must** keep `TERMII_API_KEY` set (phone OTP fails loudly, no silent fallback). **Portal on Cloudflare Workers: PENDING** (Wave 0 portal exit still open).
 - **Integrations:** R2 + Resend verified working with founder keys. OTP inline (no worker): phone code SMS-only (loud `otp_delivery_failed` on prod failure; console in dev), email code email-only. `DEFAULT_FROM_EMAIL` = contact@perblis.com.
 - **Decisions since specs:** D-017 = MVP payment provider **Bachs.io** (collect-only), supersedes Paystack in D-006; integration lands in Wave 4.
 
-**Next (Wave 2 — read `docs/waves/wave-2.md` first):**
-1. **Wave 2** is approved — supplier profiles, yards, spec templates, listings CRUD + publish (wave-2.md / FSD §5–6 / TSD). **Wave 1's auth contract is frozen — consume it, don't break it.** Note the publish gate uses the verified account levels Wave 1 established.
-2. Known minor follow-up (non-blocking): `accounts/integrations/email.py::send_otp_email` copy still reads "verify your phone" / "fallback" — should read "verify your email" (it's now the dedicated email-channel sender). One-line copy fix.
-3. Still open from Wave 0: deploy the Supplier Portal to Cloudflare Workers.
+**Next (Wave 2 close-out, then Wave 3 once founder-approved):**
+1. Merge PR #15 (CI green locally). **Wave-end checklist:** run `manage.py seed_spec_templates` in prod (~36 templates; also applied by migration), demonstrate the founder exit criterion via the prod API, record founder approval before Wave 3 (Search/Map).
+2. DEFERRED in Wave 2 (founder call): "Other (describe)" asset type → Ops review NOT built (unknown types rejected with `invalid_asset_type`; Ops surfaces are Wave 6). Photo orphan-sweep task is a logged no-op until an upload ledger / R2 lifecycle policy lands.
+3. Known minor follow-up (non-blocking): `accounts/integrations/email.py::send_otp_email` copy still reads "verify your phone" / "fallback" — should read "verify your email". One-line copy fix.
+4. Still open from Wave 0: deploy the Supplier Portal to Cloudflare Workers.
 
 **Live:** https://perblisterminal-production.up.railway.app/healthz
 
@@ -185,3 +186,11 @@ ailway setup agent -y from project root. Installed use-railway skill to Universa
 - reason: Wave 2 §2.4/§2.5 — listings can now go Live through enforced gates; fleet duplicate + photos complete the supply build.
 - change_ref: 2026-06-17 - Wave 2 Slice 3: Listings core (CRUD)
 - notes: Green locally — 147 tests / 91.25% cov, ruff+format+mypy clean, makemigrations clean, OpenAPI regenerated (listing action+photo paths, no frozen-enum drift). Publish-gate matrix fully tested (each missing precondition → its code). Orphan sweep is a logged no-op until an upload ledger / R2 lifecycle policy lands (flagged). Next: Slice 5 — reports + storefronts (closes the wave).
+
+## 2026-06-17 - Wave 2 Slice 5: reports + storefronts (wave build complete)
+- tag: FEATURE
+- area: backend/listings (enums.ReportState, models.Report, services/{reports,storefront}, errors.ListingNotReportable, serializers Report*, views ListingReportView/StorefrontView, urls, admin.ReportAdmin, factories.ReportFactory, migration 0005, tests/test_reports_storefront.py), listings/services/listings.py (hide suspended-supplier listings)
+- summary: Wave 2 §2.6 — closes the wave. `POST /api/v1/listings/:id/reports` (IsHirer, throttle 5/day/user, only Live listings → else 404); never auto-hides; **3 reports in 30 days sets `priority_review_flag`** (freezegun-tested, window-correct). Ops `ReportAdmin` shows the supplier's sibling listings. `GET /api/v1/storefronts/:supplier_id` (public): business name, logo, verification badge, member-since, about, yards (mini-map data + live count), Live listings (cover photo, ₦ display) — no hire CTA, no fee fields (D-014). Suspended/deleted supplier → storefront 404 AND listing-detail 404 (hidden together, FSD §5.3).
+- reason: Wave 2 §2.6 — abuse reporting + the public supplier page; completes the Supply wave.
+- change_ref: 2026-06-17 - Wave 2 Slice 4: photos + state machine
+- notes: Green locally — 156 tests / 91.14% cov, ruff+format+mypy clean, makemigrations clean, OpenAPI regenerated (reports + storefronts paths, no frozen-enum drift). Lexicon-clean (no owner/renter/booking). All 6 Wave 2 slices on PR #15. Wave-end checklist remaining: prod seed, founder demo, founder approval before Wave 3.

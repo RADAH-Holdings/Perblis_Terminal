@@ -14,7 +14,7 @@ from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 
 from core.models import BaseModel
-from listings.enums import AssetClass, ListingStatus, ListingTier
+from listings.enums import AssetClass, ListingStatus, ListingTier, ReportReason, ReportState
 
 
 class SpecTemplate(BaseModel):
@@ -125,3 +125,27 @@ class ListingPhoto(BaseModel):
 
     def __str__(self) -> str:
         return self.r2_key
+
+
+class Report(BaseModel):
+    """A hirer's abuse/accuracy report against a listing (FSD §5.2).
+
+    Reports never auto-hide a listing; Ops act on them. 3 reports in 30 days
+    raise the listing's ``priority_review_flag`` (set in the service).
+    """
+
+    listing = models.ForeignKey(Listing, on_delete=models.CASCADE, related_name="reports")
+    reporter = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="filed_reports"
+    )
+    reason = models.CharField(max_length=16, choices=ReportReason.choices)
+    note = models.TextField(blank=True, default="")  # reporter's note
+    state = models.CharField(max_length=16, choices=ReportState.choices, default=ReportState.OPEN)
+    resolution_note = models.TextField(blank=True, default="")  # Ops note
+
+    class Meta:
+        db_table = "reports"
+        indexes = [models.Index(fields=["listing", "created_at"])]
+
+    def __str__(self) -> str:
+        return f"{self.reason} report on {self.listing_id}"

@@ -7,8 +7,8 @@ from rest_framework_gis.fields import GeometryField
 
 from core import media
 from core.money import display
-from listings.enums import AssetClass
-from listings.models import Listing, ListingPhoto, SpecTemplate, Unit
+from listings.enums import AssetClass, ReportReason
+from listings.models import Listing, ListingPhoto, Report, SpecTemplate, Unit
 
 
 class SpecTemplateSerializer(serializers.ModelSerializer):
@@ -54,6 +54,18 @@ class PhotoReorderSerializer(serializers.Serializer):
 
 class DuplicateSerializer(serializers.Serializer):
     copy_photos = serializers.BooleanField(default=False)
+
+
+class ReportCreateSerializer(serializers.Serializer):
+    reason = serializers.ChoiceField(choices=ReportReason.choices)
+    note = serializers.CharField(max_length=1000, required=False, allow_blank=True, default="")
+
+
+class ReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Report
+        fields = ["id", "listing_id", "reason", "state", "created_at"]
+        read_only_fields = fields
 
 
 class ListingCreateSerializer(serializers.Serializer):

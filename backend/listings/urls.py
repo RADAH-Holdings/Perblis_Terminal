@@ -38,4 +38,10 @@ urlpatterns = [
         views.ListingDuplicateView.as_view(),
         name="listing-duplicate",
     ),
+    path(
+        "listings/<uuid:listing_id>/reports",
+        views.ListingReportView.as_view(),
+        name="listing-reports",
+    ),
+    path("storefronts/<uuid:supplier_id>", views.StorefrontView.as_view(), name="storefront"),
 ]

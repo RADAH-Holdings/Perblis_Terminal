@@ -540,6 +540,39 @@ paths:
               schema:
                 $ref: '#/components/schemas/Listing'
           description: ''
+  /api/v1/listings/{listing_id}/reports:
+    post:
+      operationId: listings_reports_create
+      parameters:
+      - in: path
+        name: listing_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - listings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReportCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReportCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+          description: ''
   /api/v1/me:
     get:
       operationId: me_retrieve
@@ -695,6 +728,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/SpecTemplate'
           description: ''
+  /api/v1/storefronts/{supplier_id}:
+    get:
+      operationId: storefronts_retrieve
+      description: Public supplier company page (no auth, no hire CTA, no fee fields).
+      parameters:
+      - in: path
+        name: supplier_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - storefronts
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
   /api/v1/suppliers/me/profile:
     get:
       operationId: suppliers_me_profile_retrieve
@@ -1450,6 +1502,20 @@ components:
           default: false
       required:
       - r2_key
+    ReasonEnum:
+      enum:
+      - fraudulent
+      - inaccurate
+      - inappropriate
+      - duplicate
+      - unavailable
+      type: string
+      description: |-
+        * `fraudulent` - Fraudulent
+        * `inaccurate` - Inaccurate
+        * `inappropriate` - Inappropriate
+        * `duplicate` - Duplicate
+        * `unavailable` - Unavailable
     Register:
       type: object
       properties:
@@ -1476,6 +1542,58 @@ components:
       - full_name
       - password
       - phone
+    Report:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        listing_id:
+          type: string
+          format: uuid
+          readOnly: true
+        reason:
+          allOf:
+          - $ref: '#/components/schemas/ReasonEnum'
+          readOnly: true
+        state:
+          allOf:
+          - $ref: '#/components/schemas/ReportStateEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - listing_id
+      - reason
+      - state
+    ReportCreate:
+      type: object
+      properties:
+        reason:
+          $ref: '#/components/schemas/ReasonEnum'
+        note:
+          type: string
+          default: ''
+          maxLength: 1000
+      required:
+      - reason
+    ReportStateEnum:
+      enum:
+      - open
+      - dismissed
+      - warned
+      - removed
+      type: string
+      description: |-
+        * `open` - Open
+        * `dismissed` - Dismissed
+        * `warned` - Warned
+        * `removed` - Removed
     SpecTemplate:
       type: object
       properties:
@@ -1497,16 +1615,6 @@ components:
       - asset_type
       - fields
       - version
-    StateEnum:
-      enum:
-      - pending
-      - approved
-      - rejected
-      type: string
-      description: |-
-        * `pending` - Pending
-        * `approved` - Approved
-        * `rejected` - Rejected
     StatusEnum:
       enum:
       - draft
@@ -1647,7 +1755,7 @@ components:
           readOnly: true
         state:
           allOf:
-          - $ref: '#/components/schemas/StateEnum'
+          - $ref: '#/components/schemas/VerificationRequestStateEnum'
           readOnly: true
         reason:
           type: string
@@ -1672,6 +1780,16 @@ components:
       - rc_number
       - reason
       - state
+    VerificationRequestStateEnum:
+      enum:
+      - pending
+      - approved
+      - rejected
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `approved` - Approved
+        * `rejected` - Rejected
     VerificationStatus:
       type: object
       properties:

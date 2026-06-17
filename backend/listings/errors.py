@@ -75,3 +75,9 @@ class VerificationRequired(TerminalError):
 class BusinessProfileIncomplete(TerminalError):
     default_code = "business_profile_incomplete"
     default_detail = "Complete your business profile (name + bank details) before publishing."
+
+
+class ListingNotReportable(TerminalError):
+    status_code = status.HTTP_404_NOT_FOUND
+    default_code = "not_found"
+    default_detail = "No reportable listing found."

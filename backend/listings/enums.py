@@ -41,3 +41,10 @@ class ReportReason(models.TextChoices):
     INAPPROPRIATE = "inappropriate", "Inappropriate"
     DUPLICATE = "duplicate", "Duplicate"
     UNAVAILABLE = "unavailable", "Unavailable"
+
+
+class ReportState(models.TextChoices):
+    OPEN = "open", "Open"
+    DISMISSED = "dismissed", "Dismissed"
+    WARNED = "warned", "Warned"
+    REMOVED = "removed", "Removed"
