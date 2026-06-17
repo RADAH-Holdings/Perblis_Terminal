@@ -15,6 +15,7 @@ app_name = "api"
 urlpatterns = [
     path("", include("accounts.urls")),
     path("", include("suppliers.urls")),
+    path("", include("listings.urls")),
     # Cross-cutting media pipeline (TSD §3.9).
     path("media/presign", MediaPresignView.as_view(), name="media-presign"),
     # Local-mode (dev/CI) upload/serve receivers; prod uses R2 directly.

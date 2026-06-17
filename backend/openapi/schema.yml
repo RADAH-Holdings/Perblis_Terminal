@@ -396,6 +396,38 @@ paths:
               schema:
                 $ref: '#/components/schemas/MediaPresignResponse'
           description: ''
+  /api/v1/spec-templates:
+    get:
+      operationId: spec_templates_retrieve
+      description: Public read of a spec template by class + type (latest version
+        default).
+      parameters:
+      - in: query
+        name: class
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: type
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: version
+        schema:
+          type: integer
+      tags:
+      - spec-templates
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpecTemplate'
+          description: ''
   /api/v1/suppliers/me/profile:
     get:
       operationId: suppliers_me_profile_retrieve
@@ -533,6 +565,20 @@ components:
         * `basic` - Basic
         * `verified` - Verified
         * `business_verified` - Business verified
+    AssetClassEnum:
+      enum:
+      - plant_machinery
+      - trucks_haulage
+      - warehousing
+      - terminals_yards
+      - land_staging
+      type: string
+      description: |-
+        * `plant_machinery` - Plant & Machinery
+        * `trucks_haulage` - Trucks & Haulage
+        * `warehousing` - Warehousing & Storage
+        * `terminals_yards` - Terminals & Container Yards
+        * `land_staging` - Land & Staging
     EmailOtpResend:
       type: object
       properties:
@@ -867,6 +913,27 @@ components:
       - full_name
       - password
       - phone
+    SpecTemplate:
+      type: object
+      properties:
+        asset_class:
+          allOf:
+          - $ref: '#/components/schemas/AssetClassEnum'
+          readOnly: true
+        asset_type:
+          type: string
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+          default: 1
+        fields:
+          readOnly: true
+      required:
+      - asset_class
+      - asset_type
+      - fields
+      - version
     StateEnum:
       enum:
       - pending
