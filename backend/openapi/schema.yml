@@ -273,6 +273,98 @@ paths:
               schema:
                 $ref: '#/components/schemas/TerminalTokenRefresh'
           description: ''
+  /api/v1/listings:
+    get:
+      operationId: listings_retrieve
+      tags:
+      - listings
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Listing'
+          description: ''
+    post:
+      operationId: listings_create
+      tags:
+      - listings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListingCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ListingCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ListingCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Listing'
+          description: ''
+  /api/v1/listings/{listing_id}:
+    get:
+      operationId: listings_retrieve_2
+      parameters:
+      - in: path
+        name: listing_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - listings
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Listing'
+          description: ''
+    patch:
+      operationId: listings_partial_update
+      parameters:
+      - in: path
+        name: listing_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - listings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedListingUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedListingUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedListingUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Listing'
+          description: ''
   /api/v1/me:
     get:
       operationId: me_retrieve
@@ -608,6 +700,192 @@ components:
       description: |-
         * `identity` - Identity
         * `business` - Business
+    Listing:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        supplier_id:
+          type: string
+          format: uuid
+          readOnly: true
+        yard_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        asset_class:
+          allOf:
+          - $ref: '#/components/schemas/AssetClassEnum'
+          readOnly: true
+        asset_type:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        specs:
+          readOnly: true
+        spec_template_version:
+          type: integer
+          readOnly: true
+        daily_price:
+          type: integer
+          readOnly: true
+        weekly_price:
+          type: integer
+          readOnly: true
+          nullable: true
+        monthly_price:
+          type: integer
+          readOnly: true
+          nullable: true
+        daily_price_display:
+          type: string
+          nullable: true
+          readOnly: true
+        weekly_price_display:
+          type: string
+          nullable: true
+          readOnly: true
+        monthly_price_display:
+          type: string
+          nullable: true
+          readOnly: true
+        unit_count:
+          type: integer
+          readOnly: true
+        units:
+          type: array
+          items:
+            $ref: '#/components/schemas/Unit'
+          readOnly: true
+        point:
+          type: object
+          properties:
+            type:
+              type: string
+              enum:
+              - Point
+            coordinates:
+              type: array
+              items:
+                type: number
+                format: float
+              example:
+              - 12.9721
+              - 77.5933
+              minItems: 2
+              maxItems: 3
+        address_text:
+          type: string
+          readOnly: true
+        city:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+        tier:
+          allOf:
+          - $ref: '#/components/schemas/TierEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address_text
+      - asset_class
+      - asset_type
+      - city
+      - created_at
+      - daily_price
+      - daily_price_display
+      - description
+      - id
+      - monthly_price
+      - monthly_price_display
+      - point
+      - spec_template_version
+      - specs
+      - status
+      - supplier_id
+      - tier
+      - title
+      - unit_count
+      - units
+      - updated_at
+      - weekly_price
+      - weekly_price_display
+      - yard_id
+    ListingCreate:
+      type: object
+      properties:
+        asset_class:
+          $ref: '#/components/schemas/AssetClassEnum'
+        asset_type:
+          type: string
+          maxLength: 100
+        title:
+          type: string
+          maxLength: 120
+        description:
+          type: string
+          minLength: 50
+        specs:
+          type: object
+          additionalProperties: {}
+        daily_price:
+          type: integer
+          minimum: 1
+        weekly_price:
+          type: integer
+          minimum: 1
+          nullable: true
+        monthly_price:
+          type: integer
+          minimum: 1
+          nullable: true
+        unit_count:
+          type: integer
+          minimum: 1
+          default: 1
+        yard_id:
+          type: string
+          format: uuid
+          nullable: true
+        point:
+          nullable: true
+        address_text:
+          type: string
+          default: ''
+          maxLength: 300
+        city:
+          type: string
+          default: ''
+          maxLength: 120
+        unit_labels:
+          type: array
+          items:
+            type: string
+            maxLength: 120
+      required:
+      - asset_class
+      - asset_type
+      - daily_price
+      - description
+      - title
     Login:
       type: object
       properties:
@@ -757,6 +1035,44 @@ components:
           format: email
       required:
       - email
+    PatchedListingUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 120
+        description:
+          type: string
+          minLength: 50
+        specs:
+          type: object
+          additionalProperties: {}
+        daily_price:
+          type: integer
+          minimum: 1
+        weekly_price:
+          type: integer
+          minimum: 1
+          nullable: true
+        monthly_price:
+          type: integer
+          minimum: 1
+          nullable: true
+        unit_count:
+          type: integer
+          minimum: 1
+        yard_id:
+          type: string
+          format: uuid
+          nullable: true
+        point:
+          nullable: true
+        address_text:
+          type: string
+          maxLength: 300
+        city:
+          type: string
+          maxLength: 120
     PatchedMe:
       type: object
       properties:
@@ -944,6 +1260,20 @@ components:
         * `pending` - Pending
         * `approved` - Approved
         * `rejected` - Rejected
+    StatusEnum:
+      enum:
+      - draft
+      - live
+      - paused
+      - archived
+      - removed
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `live` - Live
+        * `paused` - Paused
+        * `archived` - Archived
+        * `removed` - Removed
     SupplierProfile:
       type: object
       properties:
@@ -1023,6 +1353,16 @@ components:
       required:
       - access
       - refresh
+    TierEnum:
+      enum:
+      - basic
+      - verified
+      - inspected
+      type: string
+      description: |-
+        * `basic` - Basic
+        * `verified` - Verified
+        * `inspected` - Inspected
     TokenPair:
       type: object
       properties:
@@ -1035,6 +1375,18 @@ components:
       required:
       - access
       - refresh
+    Unit:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        label:
+          type: string
+          maxLength: 120
+      required:
+      - id
     VerificationRequest:
       type: object
       properties:

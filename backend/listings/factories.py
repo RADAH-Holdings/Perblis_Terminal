@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import factory
+from django.contrib.gis.geos import Point
 
-from listings.enums import AssetClass
-from listings.models import SpecTemplate
+from listings.enums import AssetClass, ListingStatus
+from listings.models import Listing, SpecTemplate
+from suppliers.factories import SupplierUserFactory
 
 
 class SpecTemplateFactory(factory.django.DjangoModelFactory):
@@ -25,3 +27,19 @@ class SpecTemplateFactory(factory.django.DjangoModelFactory):
             }
         }
     )
+
+
+class ListingFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Listing
+
+    supplier = factory.SubFactory(SupplierUserFactory)
+    asset_class = AssetClass.PLANT_MACHINERY
+    asset_type = "Excavator"
+    title = factory.Sequence(lambda n: f"CAT 320D #{n}")
+    description = factory.LazyFunction(lambda: "Well-maintained excavator. " * 4)
+    specs = factory.LazyFunction(dict)
+    daily_price = 8_000_000  # ₦80,000 in kobo
+    unit_count = 1
+    status = ListingStatus.DRAFT
+    point = factory.LazyFunction(lambda: Point(3.3792, 6.4433, srid=4326))

@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from drf_spectacular.utils import OpenApiParameter, extend_schema
+from rest_framework import status
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from core.permissions import IsSupplier
 from listings import serializers as s
+from listings.services import listings as listings_service
 from listings.services import specs as specs_service
 
 
@@ -37,3 +40,48 @@ class SpecTemplateView(GenericAPIView):
                 {"error": {"code": "not_found", "message": "No such spec template."}}, status=404
             )
         return Response(self.get_serializer(template).data)
+
+
+class ListingListCreateView(GenericAPIView):
+    permission_classes = [IsAuthenticated, IsSupplier]
+    serializer_class = s.ListingSerializer
+
+    def get(self, request):
+        page = self.paginate_queryset(listings_service.list_listings(request.user))
+        return self.get_paginated_response(self.get_serializer(page, many=True).data)
+
+    @extend_schema(request=s.ListingCreateSerializer, responses={201: s.ListingSerializer})
+    def post(self, request):
+        data = s.ListingCreateSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        listing, suggestion = listings_service.create_listing(
+            user=request.user, **data.validated_data
+        )
+        body = self.get_serializer(listing).data
+        if suggestion is not None:
+            body["yard_suggestion"] = {"id": str(suggestion.id), "name": suggestion.name}
+        return Response(body, status=status.HTTP_201_CREATED)
+
+
+class ListingDetailView(GenericAPIView):
+    serializer_class = s.ListingSerializer
+
+    def get_permissions(self):
+        # A Live listing is publicly readable; mutation is supplier-only.
+        if self.request.method == "GET":
+            return [AllowAny()]
+        return [IsAuthenticated(), IsSupplier()]
+
+    def get(self, request, listing_id):
+        user = request.user if request.user.is_authenticated else None
+        listing = listings_service.get_listing_for_view(listing_id=listing_id, user=user)
+        return Response(self.get_serializer(listing).data)
+
+    @extend_schema(request=s.ListingUpdateSerializer, responses={200: s.ListingSerializer})
+    def patch(self, request, listing_id):
+        data = s.ListingUpdateSerializer(data=request.data)
+        data.is_valid(raise_exception=True)
+        listing = listings_service.update_listing(
+            user=request.user, listing_id=listing_id, **data.validated_data
+        )
+        return Response(self.get_serializer(listing).data)

@@ -19,3 +19,25 @@ class SpecFieldKind(models.TextChoices):
     SELECT = "select", "Select"
     MULTI = "multi", "Multi-select"
     BOOLEAN = "boolean", "Boolean"
+
+
+class ListingStatus(models.TextChoices):
+    DRAFT = "draft", "Draft"
+    LIVE = "live", "Live"
+    PAUSED = "paused", "Paused"
+    ARCHIVED = "archived", "Archived"
+    REMOVED = "removed", "Removed"  # Ops-only
+
+
+class ListingTier(models.TextChoices):
+    BASIC = "basic", "Basic"
+    VERIFIED = "verified", "Verified"
+    INSPECTED = "inspected", "Inspected"
+
+
+class ReportReason(models.TextChoices):
+    FRAUDULENT = "fraudulent", "Fraudulent"
+    INACCURATE = "inaccurate", "Inaccurate"
+    INAPPROPRIATE = "inappropriate", "Inappropriate"
+    DUPLICATE = "duplicate", "Duplicate"
+    UNAVAILABLE = "unavailable", "Unavailable"

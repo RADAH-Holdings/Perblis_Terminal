@@ -17,3 +17,9 @@ class SpecInvalid(TerminalError):
     status_code = status.HTTP_400_BAD_REQUEST
     default_code = "spec_invalid"
     default_detail = "One or more spec fields are invalid."
+
+
+class ListingNotEditable(TerminalError):
+    status_code = status.HTTP_409_CONFLICT
+    default_code = "listing_not_editable"
+    default_detail = "Archived or removed listings cannot be edited."
