@@ -25,8 +25,8 @@ the session-start protocol that drives this file live in `CLAUDE.md`.
 **Carry-over follow-ups (non-blocking):**
 - `accounts/integrations/email.py::send_otp_email` copy still reads "verify your phone" / "fallback" — should read "verify your email". One-line copy fix.
 - Wave 2 DEFERRED (founder call): "Other (describe)" asset type → Ops review NOT built (unknown types rejected with `invalid_asset_type`; Ops surfaces are Wave 6). Photo orphan-sweep task is a logged no-op until an upload ledger / R2 lifecycle policy lands.
-- Still open from Wave 0: deploy the **Supplier Portal to Cloudflare Workers** (portal exit criterion).
-- Termii SMS sender approval (above) for the real phone-OTP flow.
+- ~~Still open from Wave 0: deploy the **Supplier Portal to Cloudflare Workers** (portal exit criterion).~~ **RESOLVED 2026-06-18 — portal is deployed on Cloudflare** (Wave 0 exit criterion now fully met): https://terminal-portal.nwabueze.workers.dev/
+- Termii SMS sender approval (above) for the real phone-OTP flow — **still pending** (taking a long time). Interim onboarding path remains the Ops admin channel-verify; founder has manually verified the primary demo account.
 
 **Local test-DB:** PostGIS via `docker compose up -d`; `pytest -x` (coverage gates: 85% hires/payments, 70% overall). **Live:** https://perblisterminal-production.up.railway.app/healthz
 
@@ -241,6 +241,14 @@ ailway setup agent -y from project root. Installed use-railway skill to Universa
 - change_ref: 2026-06-17 15:15 - FIX: promote existing SEED_SUPERUSER + prod Wave 2 E2E via Ops admin
 - notes: Storefront https://perblisterminal-production.up.railway.app/api/v1/storefronts/019ed075-5f3f-7336-8f20-334160a78c41 · Listing `019edb68-44a3-7389-8c20-702f398c7625` Live at ₦95,000/day. Fixed `admin_ops.py` login check (admin title is "Terminal Ops", not "Site administration").
 
+## 2026-06-18 - DEPLOY: Supplier Portal live on Cloudflare (Wave 0 exit criterion closed)
+- tag: DEPLOY
+- area: portal/ (Next.js on Cloudflare Workers); deployment only — no code change this session
+- summary: Founder confirmed the Supplier Portal is now deployed on Cloudflare. This closes the last open Wave 0 exit criterion (the portal deploy that had been carried over since Wave 0). Backend remains on Railway; portal is the Cloudflare Workers BFF front end per the stack (D-010..D-013).
+- reason: Founder reported the portal is deployed.
+- change_ref: 2026-06-18 15:50 - CHORE: prepare handoff for Wave 3 (Discovery)
+- notes: Portal live at https://terminal-portal.nwabueze.workers.dev/ (Cloudflare Workers). Termii SMS sender approval still PENDING (slow) — primary demo account `nwabueze@perblis.com` has been MANUALLY verified by the founder, so the Ops admin channel-verify remains the interim onboarding path until Termii approval lands. Wave 3 (Discovery) is still GATED on explicit founder go.
+
 ## 2026-06-18 15:50 - CHORE: prepare handoff for Wave 3 (Discovery)
 - tag: CHORE
 - area: Implementations.md, CLAUDE.md, docs/waves/README.md (docs-only)
@@ -248,3 +256,11 @@ ailway setup agent -y from project root. Installed use-railway skill to Universa
 - reason: Founder asked to "prepare the handoff for wave 3."
 - change_ref: 2026-06-17 15:35 - FIX: admin 500 in prod — bake static manifest at build + leading-slash STATIC_URL
 - notes: Docs-only, no behavior change. **No OpenAPI regeneration** — nothing since Wave 2's contract freeze touched an API contract (the admin theme + static fix are non-API). Wave gating is binding: this handoff does NOT authorize Wave 3 — the next instance must confirm explicit founder approval (and record Wave 2 sign-off) before coding. New-instance reading path verified: Implementations.md → design.md → docs/waves/wave-3.md → FSD §6 / TSD §3.1, §3.7, §3.8. Opening a docs-only draft PR with this.
+
+## 2026-06-18 - Wave 3 STARTED (founder go recorded) + Slice 1: search/map + aggregation core
+- tag: FEATURE
+- area: backend/search (services/{filters,queryset,aggregate,search}.py, serializers.py, throttles.py, views.py, urls.py, tests/test_map.py), backend/core/urls.py (include search.urls), .github/workflows/backend.yml (mypy +search)
+- summary: **Founder approved Wave 3 (Discovery) — Wave 2 sign-off recorded; this entry begins the build.** First slice ships `GET /api/v1/search/map` (FSD §6, TSD §3.7 normative shape). Server-authoritative yard aggregation done in ONE prefetched query then partitioned in Python: a yard with ≥2 Live listings → yard entry (carries `listing_count` = all Live at yard, `matching_count` = those passing filters; **zero-match yards still surface with matching_count 0** so the client dims rather than drops; matching summaries ride along for the Yard Sheet); yardless or single-listing-yard → solo Asset Pin (returned only when matching). Viewport via `&&` bbox-overlap on the existing GiST index; radius via ST_DWithin (`distance_lte`); `distance_km` = ST_Distance rounded 0.1, server-only, ordered nearest-first; `ref` = explicit lat/lng or bbox centroid. Filters: asset_class, `q` (ci title+description), price_min/max (daily kobo), ★ spec_min/max (the one filterable headline field per class, resolved from the seeded template) — one predicate evaluated two agreeing ways (`matches` in Python for map counts; `apply_filters` Cast/KeyTextTransform in SQL for the future list view). Suspended/deleted suppliers excluded at DB level (`suspended_at/deleted_at__isnull`). `available` stubbed True (Wave 4). Badge mirrors the storefront AccountLevel badge. Public; throttle 60/min anon · 120/min auth (per-request scope via `SearchRateThrottle`). No fee fields (D-014). No schema migration (spatial + specs GIN indexes already exist).
+- reason: Wave 3 §3.1 — the home-map read endpoint; first vertical slice.
+- change_ref: 2026-06-18 15:50 - CHORE: prepare handoff for Wave 3 (Discovery)
+- notes: **Local box has no GDAL/PostGIS/Docker** — Django commands and pytest can't run here; gates verified locally are ruff (clean) + mypy search (clean). The 9 acceptance tests (FSD §6 checks 1–8 + assertNumQueries N+1 guard, query count == 2) run in CI (GDAL+PostGIS provisioned in backend.yml). **OpenAPI NOT yet regenerated** — deferred to wave end (Slice 4) when the search contract freezes; do it then. Next: Slice 2 — `search/list` (cursor + group_by=asset|location), reusing `apply_filters` + the aggregator.
