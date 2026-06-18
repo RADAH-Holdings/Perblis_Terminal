@@ -53,7 +53,7 @@ class AdminClient:
             referer=referer,
         )
         home = self.get("/")
-        return "Site administration" in home and "sessionid" in [c.name for c in self.jar]
+        return "sessionid" in [c.name for c in self.jar] and "Log in" not in home
 
     def find_user_id(self, email: str) -> str | None:
         qs = urllib.parse.urlencode({"q": email})
